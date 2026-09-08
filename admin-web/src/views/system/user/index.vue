@@ -1,16 +1,8 @@
 <template>
   <doc-alert title="用户体系" url="https://doc.iocoder.cn/user-center/" />
-  <doc-alert title="三方登陆" url="https://doc.iocoder.cn/social-user/" />
   <doc-alert title="Excel 导入导出" url="https://doc.iocoder.cn/excel-import-and-export/" />
 
-  <el-row :gutter="20">
-    <!-- 左侧部门树 -->
-    <el-col :span="4" :xs="24">
-      <ContentWrap class="h-1/1">
-        <DeptTreeSelect @node-click="handleDeptNodeClick" />
-      </ContentWrap>
-    </el-col>
-    <el-col :span="20" :xs="24">
+  <ContentWrap>
       <!-- 搜索 -->
       <ContentWrap>
         <el-form
@@ -119,13 +111,6 @@
             prop="nickname"
             :show-overflow-tooltip="true"
           />
-          <el-table-column
-            label="部门"
-            align="center"
-            key="deptName"
-            prop="deptName"
-            :show-overflow-tooltip="true"
-          />
           <el-table-column label="手机号码" align="center" prop="mobile" width="120" />
           <el-table-column label="状态" key="status">
             <template #default="scope">
@@ -199,8 +184,7 @@
           @pagination="getList"
         />
       </ContentWrap>
-    </el-col>
-  </el-row>
+  </ContentWrap>
 
   <!-- 添加或修改用户对话框 -->
   <UserForm ref="formRef" @success="getList" />
@@ -219,7 +203,6 @@ import * as UserApi from '@/api/system/user'
 import UserForm from './UserForm.vue'
 import UserImportForm from './UserImportForm.vue'
 import UserAssignRoleForm from './UserAssignRoleForm.vue'
-import DeptTreeSelect from '@/views/system/dept/components/DeptTreeSelect.vue'
 
 defineOptions({ name: 'SystemUser' })
 
@@ -235,7 +218,6 @@ const queryParams = reactive({
   username: undefined,
   mobile: undefined,
   status: undefined,
-  deptId: undefined as number | undefined,
   createTime: []
 })
 const queryFormRef = ref() // 搜索的表单
@@ -262,12 +244,6 @@ const handleQuery = () => {
 const resetQuery = () => {
   queryFormRef.value?.resetFields()
   handleQuery()
-}
-
-/** 处理部门被点击 */
-const handleDeptNodeClick = async (deptId: number | undefined) => {
-  queryParams.deptId = deptId
-  await getList()
 }
 
 /** 添加/修改操作 */

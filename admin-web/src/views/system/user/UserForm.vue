@@ -14,31 +14,17 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="归属部门" prop="deptId">
-            <el-tree-select
-              v-model="formData.deptId"
-              :data="deptList"
-              :props="defaultProps"
-              check-strictly
-              node-key="id"
-              placeholder="请选择归属部门"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row>
-        <el-col :span="12">
           <el-form-item label="手机号码" prop="mobile">
             <el-input v-model="formData.mobile" maxlength="11" placeholder="请输入手机号码" />
           </el-form-item>
         </el-col>
+      </el-row>
+      <el-row>
         <el-col :span="12">
           <el-form-item label="邮箱" prop="email">
             <el-input v-model="formData.email" maxlength="50" placeholder="请输入邮箱" />
           </el-form-item>
         </el-col>
-      </el-row>
-      <el-row>
         <el-col :span="12">
           <el-form-item v-if="formData.id === undefined" label="用户名称" prop="username">
             <el-input v-model="formData.username" placeholder="请输入用户名称" />
@@ -54,8 +40,6 @@
             />
           </el-form-item>
         </el-col>
-      </el-row>
-      <el-row>
         <el-col :span="12">
           <el-form-item label="用户性别">
             <el-select v-model="formData.sex" placeholder="请选择">
@@ -64,18 +48,6 @@
                 :key="dict.value"
                 :label="dict.label"
                 :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="岗位">
-            <el-select v-model="formData.postIds" multiple placeholder="请选择">
-              <el-option
-                v-for="item in postList"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id!"
               />
             </el-select>
           </el-form-item>
@@ -98,9 +70,6 @@
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
-import { defaultProps, handleTree } from '@/utils/tree'
-import * as PostApi from '@/api/system/post'
-import * as DeptApi from '@/api/system/dept'
 import * as UserApi from '@/api/system/user'
 import { FormRules } from 'element-plus'
 
@@ -115,14 +84,12 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
 const formData = ref({
   nickname: '',
-  deptId: '',
   mobile: '',
   email: '',
   id: undefined,
   username: '',
   password: '',
   sex: undefined,
-  postIds: [],
   remark: '',
   status: CommonStatusEnum.ENABLE,
   roleIds: []
@@ -147,8 +114,6 @@ const formRules = reactive<FormRules>({
   ]
 })
 const formRef = ref() // 表单 Ref
-const deptList = ref<Tree[]>([]) // 树形结构
-const postList = ref([] as PostApi.PostVO[]) // 岗位列表
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
@@ -165,10 +130,6 @@ const open = async (type: string, id?: number) => {
       formLoading.value = false
     }
   }
-  // 加载部门树
-  deptList.value = handleTree(await DeptApi.getSimpleDeptList())
-  // 加载岗位列表
-  postList.value = await PostApi.getSimplePostList()
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 
@@ -202,14 +163,12 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     nickname: '',
-    deptId: '',
     mobile: '',
     email: '',
     id: undefined,
     username: '',
     password: '',
     sex: undefined,
-    postIds: [],
     remark: '',
     status: CommonStatusEnum.ENABLE,
     roleIds: []

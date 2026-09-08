@@ -80,7 +80,7 @@ const remainingRouter: AppRouteRecordRaw[] = [
     children: [
       {
         path: 'profile',
-        component: () => import('@/views/Profile/Index.vue'),
+        component: () => import('@/views/Profile/index.vue'),
         name: 'Profile',
         meta: {
           canTo: true,
@@ -128,29 +128,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
     ]
   },
   {
-    path: '/codegen',
-    component: Layout,
-    name: 'CodegenEdit',
-    meta: {
-      hidden: true
-    },
-    children: [
-      {
-        path: 'edit',
-        component: () => import('@/views/infra/codegen/EditTable.vue'),
-        name: 'InfraCodegenEditTable',
-        meta: {
-          noCache: true,
-          hidden: true,
-          canTo: true,
-          icon: 'ep:edit',
-          title: '修改生成配置',
-          activeMenu: 'infra/codegen/index'
-        }
-      }
-    ]
-  },
-  {
     path: '/job',
     component: Layout,
     name: 'JobL',
@@ -180,26 +157,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
     meta: {
       hidden: true,
       title: t('router.login'),
-      noTagsView: true
-    }
-  },
-  {
-    path: '/sso',
-    component: () => import('@/views/Login/Login.vue'),
-    name: 'SSOLogin',
-    meta: {
-      hidden: true,
-      title: t('router.login'),
-      noTagsView: true
-    }
-  },
-  {
-    path: '/social-login',
-    component: () => import('@/views/Login/SocialLogin.vue'),
-    name: 'SocialLogin',
-    meta: {
-      hidden: true,
-      title: t('router.socialLogin'),
       noTagsView: true
     }
   },
@@ -242,109 +199,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
       hidden: true,
       breadcrumb: false
     }
-  },
-  {
-    path: '/ai',
-    component: Layout,
-    name: 'Ai',
-    meta: {
-      hidden: true
-    },
-    children: [
-      {
-        path: 'image/square',
-        component: () => import('@/views/ai/image/square/index.vue'),
-        name: 'AiImageSquare',
-        meta: {
-          title: '绘图作品',
-          icon: 'ep:home-filled',
-          noCache: false
-        }
-      },
-      {
-        path: 'knowledge/document',
-        component: () => import('@/views/ai/knowledge/document/index.vue'),
-        name: 'AiKnowledgeDocument',
-        meta: {
-          title: '知识库文档',
-          icon: 'ep:document',
-          noCache: false,
-          activeMenu: '/ai/knowledge'
-        }
-      },
-      {
-        path: 'knowledge/document/create',
-        component: () => import('@/views/ai/knowledge/document/form/index.vue'),
-        name: 'AiKnowledgeDocumentCreate',
-        meta: {
-          title: '创建文档',
-          icon: 'ep:plus',
-          noCache: true,
-          hidden: true,
-          activeMenu: '/ai/knowledge'
-        }
-      },
-      {
-        path: 'knowledge/document/update',
-        component: () => import('@/views/ai/knowledge/document/form/index.vue'),
-        name: 'AiKnowledgeDocumentUpdate',
-        meta: {
-          title: '修改文档',
-          icon: 'ep:edit',
-          noCache: true,
-          hidden: true,
-          activeMenu: '/ai/knowledge'
-        }
-      },
-      {
-        path: 'knowledge/retrieval',
-        component: () => import('@/views/ai/knowledge/knowledge/retrieval/index.vue'),
-        name: 'AiKnowledgeRetrieval',
-        meta: {
-          title: '文档召回测试',
-          icon: 'ep:search',
-          noCache: true,
-          hidden: true,
-          activeMenu: '/ai/knowledge'
-        }
-      },
-      {
-        path: 'knowledge/segment',
-        component: () => import('@/views/ai/knowledge/segment/index.vue'),
-        name: 'AiKnowledgeSegment',
-        meta: {
-          title: '知识库分段',
-          icon: 'ep:tickets',
-          noCache: true,
-          hidden: true,
-          activeMenu: '/ai/knowledge'
-        }
-      },
-      {
-        path: 'console/workflow/create',
-        component: () => import('@/views/ai/workflow/form/index.vue'),
-        name: 'AiWorkflowCreate',
-        meta: {
-          noCache: true,
-          hidden: true,
-          canTo: true,
-          title: '设计 AI 工作流',
-          activeMenu: '/ai/console/workflow'
-        }
-      },
-      {
-        path: 'console/workflow/:type/:id',
-        component: () => import('@/views/ai/workflow/form/index.vue'),
-        name: 'AiWorkflowUpdate',
-        meta: {
-          noCache: true,
-          hidden: true,
-          canTo: true,
-          title: '设计 AI 工作流',
-          activeMenu: '/ai/console/workflow'
-        }
-      }
-    ]
   }
 ]
 

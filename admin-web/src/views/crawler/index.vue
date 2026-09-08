@@ -144,8 +144,12 @@ const runLoading = ref(false)
 /** 轮询状态 */
 let timer: number | undefined
 
-const statusType = (status: string) => {
-  const map: Record<string, string> = { RUNNING: 'primary', SUCCESS: 'success', FAILED: 'danger' }
+const statusType = (status: string): 'primary' | 'success' | 'danger' | 'info' => {
+  const map: Record<string, 'primary' | 'success' | 'danger' | 'info'> = {
+    RUNNING: 'primary',
+    SUCCESS: 'success',
+    FAILED: 'danger'
+  }
   return map[status] ?? 'info'
 }
 

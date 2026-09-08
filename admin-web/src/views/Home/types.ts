@@ -4,22 +4,6 @@ export type WorkplaceTotal = {
   todo: number
 }
 
-export type Project = {
-  name: string
-  icon: string
-  message: string
-  personal: string
-  time: Date | number | string
-  color: string
-}
-
-export type Notice = {
-  title: string
-  type: string
-  keys: string[]
-  date: Date | number | string
-}
-
 export type Shortcut = {
   name: string
   icon: string

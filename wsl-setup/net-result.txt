@@ -1,0 +1,10 @@
+OK:200  http://archive.ubuntu.com/ubuntu/
+FAIL  https://get.sdkman.io
+OK:307  https://nodejs.org
+OK:200  https://registry.npmjs.org
+OK:200  https://repo.maven.apache.org
+FAIL  https://github.com
+FAIL  https://download.docker.com
+OK:200  https://mirrors.aliyun.com/docker-ce/
+OK:301  https://mirrors.aliyun.com/maven/
+OK:200  https://registry.npmmirror.com

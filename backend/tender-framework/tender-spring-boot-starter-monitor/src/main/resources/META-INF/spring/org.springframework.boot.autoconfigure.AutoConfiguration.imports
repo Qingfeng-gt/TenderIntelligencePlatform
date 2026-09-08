@@ -1,0 +1,2 @@
+com.tenderintelligence.framework.tracer.config.TenderTracerAutoConfiguration
+com.tenderintelligence.framework.tracer.config.TenderMetricsAutoConfiguration

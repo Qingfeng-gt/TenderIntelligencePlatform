@@ -1,0 +1,7 @@
+com.tenderintelligence.framework.apilog.config.TenderApiLogAutoConfiguration
+com.tenderintelligence.framework.jackson.config.TenderJacksonAutoConfiguration
+com.tenderintelligence.framework.swagger.config.TenderSwaggerAutoConfiguration
+com.tenderintelligence.framework.web.config.TenderWebAutoConfiguration
+com.tenderintelligence.framework.xss.config.TenderXssAutoConfiguration
+com.tenderintelligence.framework.banner.config.TenderBannerAutoConfiguration
+com.tenderintelligence.framework.encrypt.config.TenderApiEncryptAutoConfiguration

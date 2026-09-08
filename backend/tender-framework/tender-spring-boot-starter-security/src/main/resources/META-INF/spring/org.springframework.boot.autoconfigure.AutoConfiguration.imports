@@ -1,0 +1,3 @@
+com.tenderintelligence.framework.security.config.TenderSecurityAutoConfiguration
+com.tenderintelligence.framework.security.config.TenderWebSecurityConfigurerAdapter
+com.tenderintelligence.framework.operatelog.config.TenderOperateLogConfiguration

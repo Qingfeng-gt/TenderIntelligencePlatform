@@ -1,0 +1,3 @@
+com.tenderintelligence.framework.datasource.config.TenderDataSourceAutoConfiguration
+com.tenderintelligence.framework.mybatis.config.TenderMybatisAutoConfiguration
+com.tenderintelligence.framework.translate.config.TenderTranslateAutoConfiguration

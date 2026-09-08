@@ -1,0 +1,2 @@
+com.tenderintelligence.framework.datapermission.config.TenderDataPermissionAutoConfiguration
+com.tenderintelligence.framework.datapermission.config.TenderDeptDataPermissionAutoConfiguration

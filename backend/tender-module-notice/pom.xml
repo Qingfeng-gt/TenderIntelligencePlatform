@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.tenderintelligence</groupId>
+        <artifactId>tender</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>tender-module-notice</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        notice 包下，招投标公告（标讯）
+        例如说：招标公告、中标公告、变更公告、采购公告,面向用户端门户(爬虫采集入库)
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-system</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- Job 定时任务相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-job</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

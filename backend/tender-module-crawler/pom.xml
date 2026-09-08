@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.tenderintelligence</groupId>
+        <artifactId>tender</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>tender-module-crawler</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        crawler 包下，招投标数据采集：站点配置化 + 源适配器(两段式: 列表→详情) + 字段提取 + 去重入库
+        当前实现: 中国政府采购网(ccgp), 接口见 SourceAdapter, 新源站实现适配器即可扩展
+    </description>
+
+    <dependencies>
+        <!-- 采集结果写入公告表(复用 notice 模块 DO/Mapper) -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-notice</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

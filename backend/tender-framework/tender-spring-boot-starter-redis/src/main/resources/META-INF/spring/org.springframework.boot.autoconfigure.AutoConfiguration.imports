@@ -1,0 +1,2 @@
+com.tenderintelligence.framework.redis.config.TenderRedisAutoConfiguration
+com.tenderintelligence.framework.redis.config.TenderCacheAutoConfiguration

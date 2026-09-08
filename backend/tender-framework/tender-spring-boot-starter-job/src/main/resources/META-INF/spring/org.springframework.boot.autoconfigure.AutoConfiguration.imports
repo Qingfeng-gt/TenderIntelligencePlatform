@@ -1,0 +1,2 @@
+com.tenderintelligence.framework.quartz.config.TenderQuartzAutoConfiguration
+com.tenderintelligence.framework.quartz.config.TenderAsyncAutoConfiguration

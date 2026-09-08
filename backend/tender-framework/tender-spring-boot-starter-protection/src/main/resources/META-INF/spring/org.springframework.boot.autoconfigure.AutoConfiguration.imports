@@ -1,0 +1,4 @@
+com.tenderintelligence.framework.idempotent.config.TenderIdempotentConfiguration
+com.tenderintelligence.framework.lock4j.config.TenderLock4jConfiguration
+com.tenderintelligence.framework.ratelimiter.config.TenderRateLimiterConfiguration
+com.tenderintelligence.framework.signature.config.TenderApiSignatureAutoConfiguration

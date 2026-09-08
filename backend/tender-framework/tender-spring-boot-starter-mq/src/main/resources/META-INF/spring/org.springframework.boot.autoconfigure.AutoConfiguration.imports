@@ -1,0 +1,3 @@
+com.tenderintelligence.framework.mq.redis.config.TenderRedisMQProducerAutoConfiguration
+com.tenderintelligence.framework.mq.redis.config.TenderRedisMQConsumerAutoConfiguration
+com.tenderintelligence.framework.mq.rabbitmq.config.TenderRabbitMQAutoConfiguration

@@ -25,13 +25,12 @@ public interface AdminUserMapper extends BaseMapperX<AdminUserDO> {
         return selectOne(AdminUserDO::getMobile, mobile);
     }
 
-    default PageResult<AdminUserDO> selectPage(UserPageReqVO reqVO, Collection<Long> deptIds, Collection<Long> userIds) {
+    default PageResult<AdminUserDO> selectPage(UserPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<AdminUserDO>()
                 .likeIfPresent(AdminUserDO::getUsername, reqVO.getUsername())
                 .likeIfPresent(AdminUserDO::getMobile, reqVO.getMobile())
                 .eqIfPresent(AdminUserDO::getStatus, reqVO.getStatus())
                 .betweenIfPresent(AdminUserDO::getCreateTime, reqVO.getCreateTime())
-                .inIfPresent(AdminUserDO::getDeptId, deptIds)
                 .inIfPresent(AdminUserDO::getId, userIds)
                 .orderByDesc(AdminUserDO::getId));
     }
@@ -41,17 +40,8 @@ public interface AdminUserMapper extends BaseMapperX<AdminUserDO> {
     }
 
     default List<AdminUserDO> selectListByStatus(Integer status) {
-        return selectListByStatusAndDeptId(status, null);
-    }
-
-    default List<AdminUserDO> selectListByStatusAndDeptId(Integer status, Long deptId) {
         return selectList(new LambdaQueryWrapperX<AdminUserDO>()
-                .eq(AdminUserDO::getStatus, status)
-                .eqIfPresent(AdminUserDO::getDeptId, deptId));
-    }
-
-    default List<AdminUserDO> selectListByDeptIds(Collection<Long> deptIds) {
-        return selectList(AdminUserDO::getDeptId, deptIds);
+                .eq(AdminUserDO::getStatus, status));
     }
 
 }

@@ -1,6 +1,5 @@
 package com.tenderintelligence.module.system.framework.datapermission.config;
 
-import com.tenderintelligence.module.system.dal.dataobject.dept.DeptDO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
 import com.tenderintelligence.framework.datapermission.core.rule.dept.DeptDataPermissionRuleCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -17,10 +16,7 @@ public class DataPermissionConfiguration {
     @Bean
     public DeptDataPermissionRuleCustomizer sysDeptDataPermissionRuleCustomizer() {
         return rule -> {
-            // dept
-            rule.addDeptColumn(AdminUserDO.class);
-            rule.addDeptColumn(DeptDO.class, "id");
-            // user
+            // 单租户：数据权限恒为 ALL，仅保留用户表映射以备扩展
             rule.addUserColumn(AdminUserDO.class, "id");
         };
     }

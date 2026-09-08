@@ -2,8 +2,6 @@ package com.tenderintelligence.module.system.controller.admin.user.vo.user;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.tenderintelligence.framework.common.validation.Mobile;
-import com.tenderintelligence.module.system.framework.operatelog.core.DeptParseFunction;
-import com.tenderintelligence.module.system.framework.operatelog.core.PostParseFunction;
 import com.tenderintelligence.module.system.framework.operatelog.core.SexParseFunction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mzt.logapi.starter.annotation.DiffLogField;
@@ -11,8 +9,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
-
-import java.util.Set;
 
 @Schema(description = "管理后台 - 用户创建/修改 Request VO")
 @Data
@@ -36,14 +32,6 @@ public class UserSaveReqVO {
     @Schema(description = "备注", example = "我是一个用户")
     @DiffLogField(name = "备注")
     private String remark;
-
-    @Schema(description = "部门编号", example = "我是一个用户")
-    @DiffLogField(name = "部门", function = DeptParseFunction.NAME)
-    private Long deptId;
-
-    @Schema(description = "岗位编号数组", example = "1")
-    @DiffLogField(name = "岗位", function = PostParseFunction.NAME)
-    private Set<Long> postIds;
 
     @Schema(description = "用户邮箱", example = "tender@iocoder.cn")
     @Email(message = "邮箱格式不正确")

@@ -1,7 +1,6 @@
 package com.tenderintelligence.module.system.service.user;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.tenderintelligence.framework.common.enums.CommonStatusEnum;
@@ -13,24 +12,17 @@ import com.tenderintelligence.framework.common.util.object.BeanUtils;
 import com.tenderintelligence.framework.common.util.validation.ValidationUtils;
 import com.tenderintelligence.framework.datapermission.core.util.DataPermissionUtils;
 import com.tenderintelligence.module.infra.api.config.ConfigApi;
-import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserImportExcelVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserImportRespVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserPageReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserSaveReqVO;
-import com.tenderintelligence.module.system.dal.dataobject.dept.DeptDO;
-import com.tenderintelligence.module.system.dal.dataobject.dept.UserPostDO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
-import com.tenderintelligence.module.system.dal.mysql.dept.UserPostMapper;
 import com.tenderintelligence.module.system.dal.mysql.user.AdminUserMapper;
 import com.tenderintelligence.module.system.mq.producer.user.AdminUserProducer;
-import com.tenderintelligence.module.system.service.dept.DeptService;
-import com.tenderintelligence.module.system.service.dept.PostService;
 import com.tenderintelligence.module.system.service.oauth2.OAuth2TokenService;
 import com.tenderintelligence.module.system.service.permission.PermissionService;
-import com.tenderintelligence.module.system.service.tenant.TenantService;
 import com.google.common.annotations.VisibleForTesting;
 import com.mzt.logapi.context.LogRecordContext;
 import com.mzt.logapi.service.impl.DiffParseFunction;
@@ -48,7 +40,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.tenderintelligence.framework.common.exception.util.ServiceExceptionUtil.exception;
-import static com.tenderintelligence.framework.common.util.collection.CollectionUtils.*;
+import static com.tenderintelligence.framework.common.util.collection.CollectionUtils.convertList;
+import static com.tenderintelligence.framework.common.util.collection.CollectionUtils.singleton;
 import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.*;
 import static com.tenderintelligence.module.system.enums.LogRecordConstants.*;
 
@@ -69,22 +62,12 @@ public class AdminUserServiceImpl implements AdminUserService {
     private AdminUserMapper userMapper;
 
     @Resource
-    private DeptService deptService;
-    @Resource
-    private PostService postService;
-    @Resource
     private PermissionService permissionService;
     @Resource
     private PasswordEncoder passwordEncoder;
     @Resource
-    @Lazy // 延迟，避免循环依赖报错
-    private TenantService tenantService;
-    @Resource
     @Lazy // 懒加载，避免循环依赖
     private OAuth2TokenService oauth2TokenService;
-
-    @Resource
-    private UserPostMapper userPostMapper;
 
     @Resource
     private ConfigApi configApi;
@@ -97,54 +80,18 @@ public class AdminUserServiceImpl implements AdminUserService {
     @LogRecord(type = SYSTEM_USER_TYPE, subType = SYSTEM_USER_CREATE_SUB_TYPE, bizNo = "{{#user.id}}",
             success = SYSTEM_USER_CREATE_SUCCESS)
     public Long createUser(UserSaveReqVO createReqVO) {
-        // 1.1 校验账户配合
-        tenantService.handleTenantInfo(tenant -> {
-            long count = userMapper.selectCount();
-            if (count >= tenant.getAccountCount()) {
-                throw exception(USER_COUNT_MAX, tenant.getAccountCount());
-            }
-        });
-        // 1.2 校验正确性
+        // 1. 校验正确性
         validateUserForCreateOrUpdate(null, createReqVO.getUsername(),
-                createReqVO.getMobile(), createReqVO.getEmail(), createReqVO.getDeptId(), createReqVO.getPostIds());
-        // 2.1 插入用户
+                createReqVO.getMobile(), createReqVO.getEmail());
+        // 2. 插入用户
         AdminUserDO user = BeanUtils.toBean(createReqVO, AdminUserDO.class);
         user.setStatus(CommonStatusEnum.ENABLE.getStatus()); // 默认开启
         user.setPassword(encodePassword(createReqVO.getPassword())); // 加密密码
         userMapper.insert(user);
-        // 2.2 插入关联岗位
-        if (CollectionUtil.isNotEmpty(user.getPostIds())) {
-            userPostMapper.insertBatch(convertList(user.getPostIds(),
-                    postId -> new UserPostDO().setUserId(user.getId()).setPostId(postId)));
-        }
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("user", user);
         return user.getId();
-    }
-
-    @Override
-    public AdminUserDO registerUser(AuthRegisterReqVO registerReqVO) {
-        // 1.1 校验是否开启注册
-        if (ObjUtil.notEqual(configApi.getConfigValueByKey(USER_REGISTER_ENABLED_KEY), "true")) {
-            throw exception(USER_REGISTER_DISABLED);
-        }
-        // 1.2 校验账户配合
-        tenantService.handleTenantInfo(tenant -> {
-            long count = userMapper.selectCount();
-            if (count >= tenant.getAccountCount()) {
-                throw exception(USER_COUNT_MAX, tenant.getAccountCount());
-            }
-        });
-        // 1.3 校验正确性
-        validateUserForCreateOrUpdate(null, registerReqVO.getUsername(), null, null, null, null);
-
-        // 2. 插入用户
-        AdminUserDO user = BeanUtils.toBean(registerReqVO, AdminUserDO.class);
-        user.setStatus(CommonStatusEnum.ENABLE.getStatus()); // 默认开启
-        user.setPassword(encodePassword(registerReqVO.getPassword())); // 加密密码
-        userMapper.insert(user);
-        return user;
     }
 
     @Override
@@ -155,36 +102,17 @@ public class AdminUserServiceImpl implements AdminUserService {
         updateReqVO.setPassword(null); // 特殊：此处不更新密码
         // 1. 校验正确性
         AdminUserDO oldUser = validateUserForCreateOrUpdate(updateReqVO.getId(), updateReqVO.getUsername(),
-                updateReqVO.getMobile(), updateReqVO.getEmail(), updateReqVO.getDeptId(), updateReqVO.getPostIds());
+                updateReqVO.getMobile(), updateReqVO.getEmail());
 
         // 2.1 更新用户
         AdminUserDO updateObj = BeanUtils.toBean(updateReqVO, AdminUserDO.class);
         userMapper.updateById(updateObj);
-        // 2.2 更新岗位
-        updateUserPost(updateReqVO, updateObj);
-        // 2.3 昵称 / 头像变化时，发送消息供下游订阅（如 IM 模块推 FRIEND_INFO_UPDATED）
+        // 2.2 昵称 / 头像变化时，发送消息供下游订阅（如 IM 模块推 FRIEND_INFO_UPDATED）
         publishUserProfileUpdatedIfChanged(oldUser, updateReqVO.getNickname(), updateReqVO.getAvatar());
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable(DiffParseFunction.OLD_OBJECT, BeanUtils.toBean(oldUser, UserSaveReqVO.class));
         LogRecordContext.putVariable("user", oldUser);
-    }
-
-    private void updateUserPost(UserSaveReqVO reqVO, AdminUserDO updateObj) {
-        Long userId = reqVO.getId();
-        Set<Long> dbPostIds = convertSet(userPostMapper.selectListByUserId(userId), UserPostDO::getPostId);
-        // 计算新增和删除的岗位编号
-        Set<Long> postIds = CollUtil.emptyIfNull(updateObj.getPostIds());
-        Collection<Long> createPostIds = CollUtil.subtract(postIds, dbPostIds);
-        Collection<Long> deletePostIds = CollUtil.subtract(dbPostIds, postIds);
-        // 执行新增和删除。对于已经授权的岗位，不用做任何处理
-        if (!CollectionUtil.isEmpty(createPostIds)) {
-            userPostMapper.insertBatch(convertList(createPostIds,
-                    postId -> new UserPostDO().setUserId(userId).setPostId(postId)));
-        }
-        if (!CollectionUtil.isEmpty(deletePostIds)) {
-            userPostMapper.deleteByUserIdAndPostId(userId, deletePostIds);
-        }
     }
 
     @Override
@@ -276,8 +204,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         userMapper.deleteById(id);
         // 2.2 删除用户关联数据
         permissionService.processUserDeleted(id);
-        // 2.2 删除用户岗位
-        userPostMapper.deleteByUserId(id);
 
         // 3. 记录操作日志上下文
         LogRecordContext.putVariable("user", user);
@@ -290,10 +216,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         userMapper.deleteByIds(ids);
 
         // 2. 批量删除用户关联数据
-        ids.forEach(id -> {
-            permissionService.processUserDeleted(id);
-            userPostMapper.deleteByUserId(id);
-        });
+        ids.forEach(permissionService::processUserDeleted);
     }
 
     @Override
@@ -318,32 +241,12 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         // 分页查询
-        return userMapper.selectPage(reqVO, getDeptCondition(reqVO.getDeptId()), userIds);
+        return userMapper.selectPage(reqVO, userIds);
     }
 
     @Override
     public AdminUserDO getUser(Long id) {
         return userMapper.selectById(id);
-    }
-
-    @Override
-    public List<AdminUserDO> getUserListByDeptIds(Collection<Long> deptIds) {
-        if (CollUtil.isEmpty(deptIds)) {
-            return Collections.emptyList();
-        }
-        return userMapper.selectListByDeptIds(deptIds);
-    }
-
-    @Override
-    public List<AdminUserDO> getUserListByPostIds(Collection<Long> postIds) {
-        if (CollUtil.isEmpty(postIds)) {
-            return Collections.emptyList();
-        }
-        Set<Long> userIds = convertSet(userPostMapper.selectListByPostIds(postIds), UserPostDO::getUserId);
-        if (CollUtil.isEmpty(userIds)) {
-            return Collections.emptyList();
-        }
-        return userMapper.selectByIds(userIds);
     }
 
     @Override
@@ -384,23 +287,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         return userMapper.selectListByNickname(nickname);
     }
 
-    /**
-     * 获得部门条件：查询指定部门的子部门编号们，包括自身
-     *
-     * @param deptId 部门编号
-     * @return 部门编号集合
-     */
-    private Set<Long> getDeptCondition(Long deptId) {
-        if (deptId == null) {
-            return Collections.emptySet();
-        }
-        Set<Long> deptIds = convertSet(deptService.getChildDeptList(deptId), DeptDO::getId);
-        deptIds.add(deptId); // 包括自身
-        return deptIds;
-    }
-
-    private AdminUserDO validateUserForCreateOrUpdate(Long id, String username, String mobile, String email,
-                                               Long deptId, Set<Long> postIds) {
+    private AdminUserDO validateUserForCreateOrUpdate(Long id, String username, String mobile, String email) {
         // 关闭数据权限，避免因为没有数据权限，查询不到数据，进而导致唯一校验不正确
         return DataPermissionUtils.executeIgnore(() -> {
             // 校验用户存在
@@ -411,10 +298,6 @@ public class AdminUserServiceImpl implements AdminUserService {
             validateMobileUnique(id, mobile);
             // 校验邮箱唯一
             validateEmailUnique(id, email);
-            // 校验部门处于开启状态
-            deptService.validateDeptList(CollectionUtils.singleton(deptId));
-            // 校验岗位处于开启状态
-            postService.validatePostList(postIds);
             return user;
         });
     }
@@ -530,8 +413,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             }
             // 2.1.2 校验，判断是否有不符合的原因
             try {
-                validateUserForCreateOrUpdate(null, null, importUser.getMobile(), importUser.getEmail(),
-                        importUser.getDeptId(), null);
+                validateUserForCreateOrUpdate(null, null, importUser.getMobile(), importUser.getEmail());
             } catch (ServiceException ex) {
                 respVO.getFailureUsernames().put(importUser.getUsername(), ex.getMessage());
                 return;
@@ -541,7 +423,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             AdminUserDO existUser = userMapper.selectByUsername(importUser.getUsername());
             if (existUser == null) {
                 userMapper.insert(BeanUtils.toBean(importUser, AdminUserDO.class)
-                        .setPassword(encodePassword(initPassword)).setPostIds(new HashSet<>())); // 设置默认密码及空岗位编号数组
+                        .setPassword(encodePassword(initPassword))); // 设置默认密码
                 respVO.getCreateUsernames().add(importUser.getUsername());
                 return;
             }
@@ -560,12 +442,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public List<AdminUserDO> getUserListByStatus(Integer status) {
-        return getUserListByStatus(status, null);
-    }
-
-    @Override
-    public List<AdminUserDO> getUserListByStatus(Integer status, Long deptId) {
-        return userMapper.selectListByStatusAndDeptId(status, deptId);
+        return userMapper.selectListByStatus(status);
     }
 
     @Override

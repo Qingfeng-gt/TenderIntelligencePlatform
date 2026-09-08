@@ -2,7 +2,6 @@ package com.tenderintelligence.module.system.dal.dataobject.notify;
 
 import com.tenderintelligence.framework.common.enums.UserTypeEnum;
 import com.tenderintelligence.framework.mybatis.core.dataobject.BaseDO;
-import com.tenderintelligence.module.system.dal.dataobject.mail.MailTemplateDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;

@@ -33,36 +33,12 @@ public interface AdminUserApi {
     AdminUserRespDTO getUserByMobile(String mobile);
 
     /**
-     * 通过用户 ID 查询用户下属
-     *
-     * @param id 用户编号
-     * @return 用户下属用户列表
-     */
-    List<AdminUserRespDTO> getUserListBySubordinate(Long id);
-
-    /**
      * 通过用户 ID 查询用户们
      *
      * @param ids 用户 ID 们
      * @return 用户对象信息
      */
     List<AdminUserRespDTO> getUserList(Collection<Long> ids);
-
-    /**
-     * 获得指定部门的用户数组
-     *
-     * @param deptIds 部门数组
-     * @return 用户数组
-     */
-    List<AdminUserRespDTO> getUserListByDeptIds(Collection<Long> deptIds);
-
-    /**
-     * 获得指定岗位的用户数组
-     *
-     * @param postIds 岗位数组
-     * @return 用户数组
-     */
-    List<AdminUserRespDTO> getUserListByPostIds(Collection<Long> postIds);
 
     /**
      * 根据昵称模糊搜索用户

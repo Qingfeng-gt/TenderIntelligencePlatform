@@ -3,7 +3,6 @@ package com.tenderintelligence.module.system.service.user;
 import cn.hutool.core.collection.CollUtil;
 import com.tenderintelligence.framework.common.pojo.PageResult;
 import com.tenderintelligence.framework.common.util.collection.CollectionUtils;
-import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthRegisterReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserImportExcelVO;
@@ -12,7 +11,6 @@ import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserPa
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.UserSaveReqVO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
 import jakarta.validation.Valid;
-import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,14 +31,6 @@ public interface AdminUserService {
      * @return 用户编号
      */
     Long createUser(@Valid UserSaveReqVO createReqVO);
-
-    /**
-     * 注册用户
-     *
-     * @param registerReqVO 用户信息
-     * @return 用户信息
-     */
-    AdminUserDO registerUser(@Valid AuthRegisterReqVO registerReqVO);
 
     /**
      * 修改用户
@@ -136,22 +126,6 @@ public interface AdminUserService {
     AdminUserDO getUser(Long id);
 
     /**
-     * 获得指定部门的用户数组
-     *
-     * @param deptIds 部门数组
-     * @return 用户数组
-     */
-    List<AdminUserDO> getUserListByDeptIds(Collection<Long> deptIds);
-
-    /**
-     * 获得指定岗位的用户数组
-     *
-     * @param postIds 岗位数组
-     * @return 用户数组
-     */
-    List<AdminUserDO> getUserListByPostIds(Collection<Long> postIds);
-
-    /**
      * 获得用户列表
      *
      * @param ids 用户编号数组
@@ -213,15 +187,6 @@ public interface AdminUserService {
      * @return 用户们
      */
     List<AdminUserDO> getUserListByStatus(Integer status);
-
-    /**
-     * 获得指定状态和部门的用户们
-     *
-     * @param status 状态
-     * @param deptId 部门编号，{@code null} 表示不筛选部门
-     * @return 用户们
-     */
-    List<AdminUserDO> getUserListByStatus(Integer status, @Nullable Long deptId);
 
     /**
      * 判断密码是否匹配

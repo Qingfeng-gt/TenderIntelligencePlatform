@@ -10,10 +10,8 @@ import com.tenderintelligence.framework.common.pojo.PageResult;
 import com.tenderintelligence.framework.excel.core.util.ExcelUtils;
 import com.tenderintelligence.module.system.controller.admin.user.vo.user.*;
 import com.tenderintelligence.module.system.convert.user.UserConvert;
-import com.tenderintelligence.module.system.dal.dataobject.dept.DeptDO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
 import com.tenderintelligence.module.system.enums.common.SexEnum;
-import com.tenderintelligence.module.system.service.dept.DeptService;
 import com.tenderintelligence.module.system.service.user.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,7 +20,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.util.Collections;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -32,12 +29,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static com.tenderintelligence.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static com.tenderintelligence.framework.common.pojo.CommonResult.success;
-import static com.tenderintelligence.framework.common.util.collection.CollectionUtils.convertList;
-import static com.tenderintelligence.framework.common.util.collection.CollectionUtils.convertSet;
 
 @Tag(name = "管理后台 - 用户")
 @RestController
@@ -47,8 +41,6 @@ public class UserController {
 
     @Resource
     private AdminUserService userService;
-    @Resource
-    private DeptService deptService;
 
     @PostMapping("/create")
     @Operation(summary = "新增用户")
@@ -109,10 +101,7 @@ public class UserController {
         if (CollUtil.isEmpty(pageResult.getList())) {
             return success(new PageResult<>(pageResult.getTotal()));
         }
-        // 拼接数据
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(pageResult.getList(), AdminUserDO::getDeptId));
-        return success(new PageResult<>(UserConvert.INSTANCE.convertList(pageResult.getList(), deptMap),
+        return success(new PageResult<>(UserConvert.INSTANCE.convertList(pageResult.getList()),
                 pageResult.getTotal()));
     }
 
@@ -125,22 +114,15 @@ public class UserController {
         if (CollUtil.isEmpty(list)) {
             return success(Collections.emptyList());
         }
-        // 拼接数据
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(convertSet(list, AdminUserDO::getDeptId));
-        return success(UserConvert.INSTANCE.convertList(list, deptMap));
+        return success(UserConvert.INSTANCE.convertList(list));
     }
 
     @GetMapping({"/list-all-simple", "/simple-list"})
     @Operation(summary = "获取用户精简信息列表", description = "只包含被开启的用户，主要用于前端的下拉选项")
-    public CommonResult<List<UserSimpleRespVO>> getSimpleUserList(
-            @RequestParam(value = "deptId", required = false) Long deptId) {
+    public CommonResult<List<UserSimpleRespVO>> getSimpleUserList() {
         List<AdminUserDO> list = userService.getUserListByStatus(
-                CommonStatusEnum.ENABLE.getStatus(), deptId);
-
-        // 拼接数据
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(list, AdminUserDO::getDeptId));
-        return success(UserConvert.INSTANCE.convertSimpleList(list, deptMap));
+                CommonStatusEnum.ENABLE.getStatus());
+        return success(UserConvert.INSTANCE.convertSimpleList(list));
     }
 
     @GetMapping("/get")
@@ -149,12 +131,7 @@ public class UserController {
     @PreAuthorize("@ss.hasPermission('system:user:query')")
     public CommonResult<UserRespVO> getUser(@RequestParam("id") Long id) {
         AdminUserDO user = userService.getUser(id);
-        if (user == null) {
-            return success(null);
-        }
-        // 拼接数据
-        DeptDO dept = deptService.getDept(user.getDeptId());
-        return success(UserConvert.INSTANCE.convert(user, dept));
+        return success(UserConvert.INSTANCE.convert(user));
     }
 
     @GetMapping("/export-excel")
@@ -166,10 +143,8 @@ public class UserController {
         exportReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
         List<AdminUserDO> list = userService.getUserPage(exportReqVO).getList();
         // 输出 Excel
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(
-                convertList(list, AdminUserDO::getDeptId));
         ExcelUtils.write(response, "用户数据.xls", "数据", UserRespVO.class,
-                UserConvert.INSTANCE.convertList(list, deptMap));
+                UserConvert.INSTANCE.convertList(list));
     }
 
     @GetMapping("/get-import-template")
@@ -177,9 +152,9 @@ public class UserController {
     public void importTemplate(HttpServletResponse response) throws IOException {
         // 手动创建导出 demo
         List<UserImportExcelVO> list = Arrays.asList(
-                UserImportExcelVO.builder().username("yunai").deptId(1L).email("yunai@iocoder.cn").mobile("15601691300")
+                UserImportExcelVO.builder().username("yunai").email("yunai@iocoder.cn").mobile("15601691300")
                         .nickname("芋道").status(CommonStatusEnum.ENABLE.getStatus()).sex(SexEnum.MALE.getSex()).build(),
-                UserImportExcelVO.builder().username("yuanma").deptId(2L).email("yuanma@iocoder.cn").mobile("15601701300")
+                UserImportExcelVO.builder().username("yuanma").email("yuanma@iocoder.cn").mobile("15601701300")
                         .nickname("源码").status(CommonStatusEnum.DISABLE.getStatus()).sex(SexEnum.FEMALE.getSex()).build()
         );
         // 输出
@@ -206,14 +181,8 @@ public class UserController {
     @Parameter(name = "id", description = "用户编号", required = true, example = "1024")
     public CommonResult<UserSimpleRespVO> getSimpleUser(@RequestParam("id") Long id) {
         AdminUserDO user = userService.getUser(id);
-        if (user == null) {
-            return success(null);
-        }
-        // 拼接数据
-        DeptDO dept = user.getDeptId() != null ? deptService.getDept(user.getDeptId()) : null;
-        Map<Long, DeptDO> deptMap = dept != null ? Collections.singletonMap(dept.getId(), dept) : Collections.emptyMap();
         return success(CollUtil.getFirst(UserConvert.INSTANCE.convertSimpleList(
-                Collections.singletonList(user), deptMap)));
+                user != null ? Collections.singletonList(user) : Collections.emptyList())));
     }
 
     @GetMapping("/list-by-nickname")
@@ -223,10 +192,8 @@ public class UserController {
         if (StrUtil.isBlank(nickname)) {
             return success(Collections.emptyList());
         }
-        // 拼接数据
         List<AdminUserDO> list = userService.getUserListByNickname(nickname.trim());
-        Map<Long, DeptDO> deptMap = deptService.getDeptMap(convertList(list, AdminUserDO::getDeptId));
-        return success(UserConvert.INSTANCE.convertSimpleList(list, deptMap));
+        return success(UserConvert.INSTANCE.convertSimpleList(list));
     }
 
 }

@@ -1,18 +1,13 @@
 package com.tenderintelligence.module.system.controller.admin.user;
 
-import cn.hutool.core.collection.CollUtil;
 import com.tenderintelligence.framework.common.pojo.CommonResult;
 import com.tenderintelligence.framework.datapermission.core.annotation.DataPermission;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileRespVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdatePasswordReqVO;
 import com.tenderintelligence.module.system.controller.admin.user.vo.profile.UserProfileUpdateReqVO;
 import com.tenderintelligence.module.system.convert.user.UserConvert;
-import com.tenderintelligence.module.system.dal.dataobject.dept.DeptDO;
-import com.tenderintelligence.module.system.dal.dataobject.dept.PostDO;
 import com.tenderintelligence.module.system.dal.dataobject.permission.RoleDO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
-import com.tenderintelligence.module.system.service.dept.DeptService;
-import com.tenderintelligence.module.system.service.dept.PostService;
 import com.tenderintelligence.module.system.service.permission.PermissionService;
 import com.tenderintelligence.module.system.service.permission.RoleService;
 import com.tenderintelligence.module.system.service.user.AdminUserService;
@@ -39,27 +34,19 @@ public class UserProfileController {
     @Resource
     private AdminUserService userService;
     @Resource
-    private DeptService deptService;
-    @Resource
-    private PostService postService;
-    @Resource
     private PermissionService permissionService;
     @Resource
     private RoleService roleService;
 
     @GetMapping("/get")
     @Operation(summary = "获得登录用户信息")
-    @DataPermission(enable = false) // 关闭数据权限，避免只查看自己时，查询不到部门。
+    @DataPermission(enable = false) // 关闭数据权限
     public CommonResult<UserProfileRespVO> getUserProfile() {
         // 获得用户基本信息
         AdminUserDO user = userService.getUser(getLoginUserId());
         // 获得用户角色
         List<RoleDO> userRoles = roleService.getRoleListFromCache(permissionService.getUserRoleIdListByUserId(user.getId()));
-        // 获得部门信息
-        DeptDO dept = user.getDeptId() != null ? deptService.getDept(user.getDeptId()) : null;
-        // 获得岗位信息
-        List<PostDO> posts = CollUtil.isNotEmpty(user.getPostIds()) ? postService.getPostList(user.getPostIds()) : null;
-        return success(UserConvert.INSTANCE.convert(user, userRoles, dept, posts));
+        return success(UserConvert.INSTANCE.convert(user, userRoles));
     }
 
     @PutMapping("/update")

@@ -3,13 +3,7 @@ package com.tenderintelligence.module.system.convert.auth;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import com.tenderintelligence.framework.common.util.object.BeanUtils;
-import com.tenderintelligence.module.system.api.sms.dto.code.SmsCodeSendReqDTO;
-import com.tenderintelligence.module.system.api.sms.dto.code.SmsCodeUseReqDTO;
-import com.tenderintelligence.module.system.api.social.dto.SocialUserBindReqDTO;
 import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthPermissionInfoRespVO;
-import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthSmsLoginReqVO;
-import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthSmsSendReqVO;
-import com.tenderintelligence.module.system.controller.admin.auth.vo.AuthSocialLoginReqVO;
 import com.tenderintelligence.module.system.dal.dataobject.permission.MenuDO;
 import com.tenderintelligence.module.system.dal.dataobject.permission.RoleDO;
 import com.tenderintelligence.module.system.dal.dataobject.user.AdminUserDO;
@@ -78,11 +72,5 @@ public interface AuthConvert {
         // 获得到所有的根节点
         return filterList(treeNodeMap.values(), node -> ID_ROOT.equals(node.getParentId()));
     }
-
-    SocialUserBindReqDTO convert(Long userId, Integer userType, AuthSocialLoginReqVO reqVO);
-
-    SmsCodeSendReqDTO convert(AuthSmsSendReqVO reqVO);
-
-    SmsCodeUseReqDTO convert(AuthSmsLoginReqVO reqVO, Integer scene, String usedIp);
 
 }

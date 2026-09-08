@@ -1,7 +1,5 @@
 package com.tenderintelligence.module.system.service.oauth2;
 
-import com.tenderintelligence.framework.common.pojo.PageResult;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.token.OAuth2AccessTokenPageReqVO;
 import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
 
 import java.util.List;
@@ -79,14 +77,6 @@ public interface OAuth2TokenService {
      * @param userType 用户类型
      */
     void removeAccessToken(Long userId, Integer userType);
-
-    /**
-     * 获得访问令牌分页
-     *
-     * @param reqVO 请求
-     * @return 访问令牌分页
-     */
-    PageResult<OAuth2AccessTokenDO> getAccessTokenPage(OAuth2AccessTokenPageReqVO reqVO);
 
     /**
      * 清理过期 exceedDay 天的刷新令牌

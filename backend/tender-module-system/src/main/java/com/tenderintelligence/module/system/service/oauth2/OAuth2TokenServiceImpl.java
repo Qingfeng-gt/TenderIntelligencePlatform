@@ -14,7 +14,6 @@ import com.tenderintelligence.framework.common.util.object.BeanUtils;
 import com.tenderintelligence.framework.security.core.LoginUser;
 import com.tenderintelligence.framework.tenant.core.context.TenantContextHolder;
 import com.tenderintelligence.framework.tenant.core.util.TenantUtils;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.token.OAuth2AccessTokenPageReqVO;
 import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
 import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2ClientDO;
 import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2RefreshTokenDO;
@@ -169,11 +168,6 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
             oauth2RefreshTokenMapper.deleteByRefreshToken(accessToken.getRefreshToken());
             oauth2AccessTokenRedisDAO.delete(accessToken.getRefreshToken());
         });
-    }
-
-    @Override
-    public PageResult<OAuth2AccessTokenDO> getAccessTokenPage(OAuth2AccessTokenPageReqVO reqVO) {
-        return oauth2AccessTokenMapper.selectPage(reqVO);
     }
 
     private OAuth2AccessTokenDO createOAuth2AccessToken(OAuth2RefreshTokenDO refreshTokenDO, OAuth2ClientDO clientDO) {

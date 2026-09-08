@@ -1,13 +1,8 @@
 package com.tenderintelligence.module.system.service.oauth2;
 
-import com.tenderintelligence.framework.common.pojo.PageResult;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.client.OAuth2ClientPageReqVO;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.client.OAuth2ClientSaveReqVO;
 import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2ClientDO;
-import jakarta.validation.Valid;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * OAuth2.0 Client Service 接口
@@ -19,57 +14,12 @@ import java.util.List;
 public interface OAuth2ClientService {
 
     /**
-     * 创建 OAuth2 客户端
-     *
-     * @param createReqVO 创建信息
-     * @return 编号
-     */
-    Long createOAuth2Client(@Valid OAuth2ClientSaveReqVO createReqVO);
-
-    /**
-     * 更新 OAuth2 客户端
-     *
-     * @param updateReqVO 更新信息
-     */
-    void updateOAuth2Client(@Valid OAuth2ClientSaveReqVO updateReqVO);
-
-    /**
-     * 删除 OAuth2 客户端
-     *
-     * @param id 编号
-     */
-    void deleteOAuth2Client(Long id);
-
-    /**
-     * 批量删除 OAuth2 客户端
-     *
-     * @param ids 编号数组
-     */
-    void deleteOAuth2ClientList(List<Long> ids);
-
-    /**
-     * 获得 OAuth2 客户端
-     *
-     * @param id 编号
-     * @return OAuth2 客户端
-     */
-    OAuth2ClientDO getOAuth2Client(Long id);
-
-    /**
      * 获得 OAuth2 客户端，从缓存中
      *
      * @param clientId 客户端编号
      * @return OAuth2 客户端
      */
     OAuth2ClientDO getOAuth2ClientFromCache(String clientId);
-
-    /**
-     * 获得 OAuth2 客户端分页
-     *
-     * @param pageReqVO 分页查询
-     * @return OAuth2 客户端分页
-     */
-    PageResult<OAuth2ClientDO> getOAuth2ClientPage(OAuth2ClientPageReqVO pageReqVO);
 
     /**
      * 从缓存中，校验客户端是否合法

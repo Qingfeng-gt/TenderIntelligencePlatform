@@ -5,30 +5,23 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.tenderintelligence.framework.common.enums.CommonStatusEnum;
-import com.tenderintelligence.framework.common.pojo.PageResult;
-import com.tenderintelligence.framework.common.util.object.BeanUtils;
 import com.tenderintelligence.framework.common.util.string.StrUtils;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.client.OAuth2ClientPageReqVO;
-import com.tenderintelligence.module.system.controller.admin.oauth2.vo.client.OAuth2ClientSaveReqVO;
-import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2ClientDO;
 import com.tenderintelligence.module.system.dal.mysql.oauth2.OAuth2ClientMapper;
+import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2ClientDO;
 import com.tenderintelligence.module.system.dal.redis.RedisKeyConstants;
-import com.google.common.annotations.VisibleForTesting;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import jakarta.annotation.Resource;
 import java.util.Collection;
-import java.util.List;
 
 import static com.tenderintelligence.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.*;
 
 /**
- * OAuth2.0 Client Service 实现类
+ * OAuth2.0 客户端 Service 实现类
  *
  * @author 芋道源码
  */
@@ -41,81 +34,10 @@ public class OAuth2ClientServiceImpl implements OAuth2ClientService {
     private OAuth2ClientMapper oauth2ClientMapper;
 
     @Override
-    public Long createOAuth2Client(OAuth2ClientSaveReqVO createReqVO) {
-        validateClientIdExists(null, createReqVO.getClientId());
-        // 插入
-        OAuth2ClientDO client = BeanUtils.toBean(createReqVO, OAuth2ClientDO.class);
-        oauth2ClientMapper.insert(client);
-        return client.getId();
-    }
-
-    @Override
-    @CacheEvict(cacheNames = RedisKeyConstants.OAUTH_CLIENT,
-            allEntries = true) // allEntries 清空所有缓存，因为可能修改到 clientId 字段，不好清理
-    public void updateOAuth2Client(OAuth2ClientSaveReqVO updateReqVO) {
-        // 校验存在
-        validateOAuth2ClientExists(updateReqVO.getId());
-        // 校验 Client 未被占用
-        validateClientIdExists(updateReqVO.getId(), updateReqVO.getClientId());
-
-        // 更新
-        OAuth2ClientDO updateObj = BeanUtils.toBean(updateReqVO, OAuth2ClientDO.class);
-        oauth2ClientMapper.updateById(updateObj);
-    }
-
-    @Override
-    @CacheEvict(cacheNames = RedisKeyConstants.OAUTH_CLIENT,
-            allEntries = true) // allEntries 清空所有缓存，因为 id 不是直接的缓存 key，不好清理
-    public void deleteOAuth2Client(Long id) {
-        // 校验存在
-        validateOAuth2ClientExists(id);
-        // 删除
-        oauth2ClientMapper.deleteById(id);
-    }
-
-    @Override
-    @CacheEvict(cacheNames = RedisKeyConstants.OAUTH_CLIENT,
-            allEntries = true) // allEntries 清空所有缓存，因为 id 不是直接的缓存 key，不好清理
-    public void deleteOAuth2ClientList(List<Long> ids) {
-        oauth2ClientMapper.deleteByIds(ids);
-    }
-
-    private void validateOAuth2ClientExists(Long id) {
-        if (oauth2ClientMapper.selectById(id) == null) {
-            throw exception(OAUTH2_CLIENT_NOT_EXISTS);
-        }
-    }
-
-    @VisibleForTesting
-    void validateClientIdExists(Long id, String clientId) {
-        OAuth2ClientDO client = oauth2ClientMapper.selectByClientId(clientId);
-        if (client == null) {
-            return;
-        }
-        // 如果 id 为空，说明不用比较是否为相同 id 的客户端
-        if (id == null) {
-            throw exception(OAUTH2_CLIENT_EXISTS);
-        }
-        if (!client.getId().equals(id)) {
-            throw exception(OAUTH2_CLIENT_EXISTS);
-        }
-    }
-
-    @Override
-    public OAuth2ClientDO getOAuth2Client(Long id) {
-        return oauth2ClientMapper.selectById(id);
-    }
-
-    @Override
     @Cacheable(cacheNames = RedisKeyConstants.OAUTH_CLIENT, key = "#clientId",
             unless = "#result == null")
     public OAuth2ClientDO getOAuth2ClientFromCache(String clientId) {
         return oauth2ClientMapper.selectByClientId(clientId);
-    }
-
-    @Override
-    public PageResult<OAuth2ClientDO> getOAuth2ClientPage(OAuth2ClientPageReqVO pageReqVO) {
-        return oauth2ClientMapper.selectPage(pageReqVO);
     }
 
     @Override

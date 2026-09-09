@@ -21,9 +21,10 @@ export function hasPermi(app: App<Element>) {
 }
 
 /** 判断权限的方法 function */
-const userStore = useUserStore()
 const all_permission = '*:*:*'
 export const hasPermission = (permission: string[]) => {
+  // 必须在函数内获取 store，避免模块加载阶段（pinia 尚未安装）访问导致启动崩溃
+  const userStore = useUserStore()
   return (
     userStore.permissions.has(all_permission) ||
     permission.some((permission) => userStore.permissions.has(permission))

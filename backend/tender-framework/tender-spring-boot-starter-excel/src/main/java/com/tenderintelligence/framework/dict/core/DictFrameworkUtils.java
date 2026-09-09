@@ -18,7 +18,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * 字典工具类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Slf4j
 public class DictFrameworkUtils {

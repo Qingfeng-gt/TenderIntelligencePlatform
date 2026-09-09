@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * 角色 API 接口
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface RoleApi {
 

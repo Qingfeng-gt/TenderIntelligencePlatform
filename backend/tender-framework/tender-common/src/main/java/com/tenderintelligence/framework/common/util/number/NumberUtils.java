@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 /**
  * 数字的工具类，补全 {@link cn.hutool.core.util.NumberUtil} 的功能
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class NumberUtils {
 

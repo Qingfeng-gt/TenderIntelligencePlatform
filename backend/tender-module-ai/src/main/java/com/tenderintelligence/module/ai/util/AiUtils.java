@@ -28,7 +28,7 @@ import static com.tenderintelligence.module.ai.enums.ErrorCodeConstants.API_CONF
 /**
  * Spring AI 工具类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class AiUtils {
 

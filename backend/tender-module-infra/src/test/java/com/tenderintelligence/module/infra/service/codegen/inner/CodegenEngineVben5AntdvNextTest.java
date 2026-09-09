@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link CodegenEngine} 的 Vue3 + Vben5 + Antdv Next 单元测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class CodegenEngineVben5AntdvNextTest extends CodegenEngineAbstractTest {
 

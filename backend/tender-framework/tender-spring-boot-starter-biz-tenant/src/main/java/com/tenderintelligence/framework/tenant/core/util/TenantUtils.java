@@ -10,7 +10,7 @@ import static com.tenderintelligence.framework.web.core.util.WebFrameworkUtils.H
 /**
  * 多租户 Util
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class TenantUtils {
 

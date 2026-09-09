@@ -22,7 +22,7 @@ import static com.tenderintelligence.module.ai.util.AiUtils.validateApiKey;
 /**
  * {@link DeepSeekChatModel} 集成测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class DeepSeekChatModelTests {
 

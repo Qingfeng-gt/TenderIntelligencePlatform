@@ -23,7 +23,7 @@ import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.*;
 /**
  * OAuth2.0 客户端 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

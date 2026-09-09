@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * {@link CodegenEngine} 的 Vue3 + Vben5 + AntD + General 单元测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class CodegenEngineVben5AntdGeneralTest extends CodegenEngineAbstractTest {
 

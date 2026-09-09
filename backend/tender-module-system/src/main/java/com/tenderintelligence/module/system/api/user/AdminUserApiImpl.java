@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Admin 用户 API 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 public class AdminUserApiImpl implements AdminUserApi {

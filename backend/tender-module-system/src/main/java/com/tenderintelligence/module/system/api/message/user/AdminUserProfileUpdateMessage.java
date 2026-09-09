@@ -9,7 +9,7 @@ import lombok.Data;
  * 仅当 nickname 或 avatar 真的发生变化时才发送；订阅方据此做下游分发，
  * 例如 IM 模块向该用户的所有好友推送 FRIEND_INFO_UPDATED 通知
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Data
 public class AdminUserProfileUpdateMessage {

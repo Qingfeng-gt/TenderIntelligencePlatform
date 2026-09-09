@@ -20,7 +20,7 @@ import static com.tenderintelligence.module.ai.enums.ErrorCodeConstants.API_KEY_
 /**
  * AI API 密钥 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

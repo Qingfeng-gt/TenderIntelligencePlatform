@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 /**
  * {@link OAuth2GrantServiceImpl} 的单元测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class OAuth2GrantServiceImplTest extends BaseMockitoUnitTest {
 

@@ -25,7 +25,7 @@ import static com.tenderintelligence.module.infra.enums.ErrorCodeConstants.API_E
 /**
  * API 错误日志 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

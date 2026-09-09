@@ -5,7 +5,7 @@ import com.tenderintelligence.module.system.dal.dataobject.oauth2.OAuth2AccessTo
 /**
  * System Redis Key 枚举类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface RedisKeyConstants {
 

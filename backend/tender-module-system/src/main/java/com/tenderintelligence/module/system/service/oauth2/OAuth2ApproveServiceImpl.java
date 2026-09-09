@@ -20,7 +20,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * OAuth2 批准 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

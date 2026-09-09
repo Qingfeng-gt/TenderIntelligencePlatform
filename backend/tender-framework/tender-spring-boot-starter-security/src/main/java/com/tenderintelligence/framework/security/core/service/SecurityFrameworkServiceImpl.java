@@ -14,7 +14,7 @@ import static com.tenderintelligence.framework.security.core.util.SecurityFramew
 /**
  * 默认的 {@link SecurityFrameworkService} 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @AllArgsConstructor
 public class SecurityFrameworkServiceImpl implements SecurityFrameworkService {

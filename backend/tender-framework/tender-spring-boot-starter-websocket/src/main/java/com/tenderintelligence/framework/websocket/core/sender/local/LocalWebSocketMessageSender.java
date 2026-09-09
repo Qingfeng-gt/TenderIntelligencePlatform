@@ -9,7 +9,7 @@ import com.tenderintelligence.framework.websocket.core.session.WebSocketSessionM
  *
  * 注意：仅仅适合单机场景！！！
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class LocalWebSocketMessageSender extends AbstractWebSocketMessageSender {
 

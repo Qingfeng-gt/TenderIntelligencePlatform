@@ -3,7 +3,7 @@ package com.tenderintelligence.module.infra.api.config;
 /**
  * 参数配置 API 接口
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface ConfigApi {
 

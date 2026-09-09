@@ -24,7 +24,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * 工具：列出指定目录的文件列表
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Component("directory_list")
 public class DirectoryListToolFunction implements Function<DirectoryListToolFunction.Request, DirectoryListToolFunction.Response> {

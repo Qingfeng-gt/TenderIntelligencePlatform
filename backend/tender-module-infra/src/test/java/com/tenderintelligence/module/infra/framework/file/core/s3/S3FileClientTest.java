@@ -20,7 +20,7 @@ public class S3FileClientTest {
     public void testPresignGetUrl_publicAccess_encodeUrlPath() {
         // 准备参数
         S3FileClientConfig config = new S3FileClientConfig();
-        config.setDomain("https://static.iocoder.cn");
+        config.setDomain("https://static.example.com");
         config.setEnablePublicAccess(true);
         S3FileClient client = new S3FileClient(0L, config);
 
@@ -28,22 +28,22 @@ public class S3FileClientTest {
         String result = client.presignGetUrl("avatar/中文 100%+文件.jpg", 300);
 
         // 断言
-        assertEquals("https://static.iocoder.cn/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg", result);
+        assertEquals("https://static.example.com/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg", result);
     }
 
     @Test
     public void testPresignGetUrl_publicAccess_decodeDomainUrl() {
         // 准备参数
         S3FileClientConfig config = new S3FileClientConfig();
-        config.setDomain("https://static.iocoder.cn");
+        config.setDomain("https://static.example.com");
         config.setEnablePublicAccess(true);
         S3FileClient client = new S3FileClient(0L, config);
 
         // 调用
-        String result = client.presignGetUrl("https://static.iocoder.cn/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg?token=1", 300);
+        String result = client.presignGetUrl("https://static.example.com/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg?token=1", 300);
 
         // 断言
-        assertEquals("https://static.iocoder.cn/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg", result);
+        assertEquals("https://static.example.com/avatar/%E4%B8%AD%E6%96%87%20100%25+%E6%96%87%E4%BB%B6.jpg", result);
     }
 
     @Test
@@ -129,7 +129,7 @@ public class S3FileClientTest {
         config.setAccessKey(System.getenv("ALIYUN_ACCESS_KEY"));
         config.setAccessSecret(System.getenv("ALIYUN_SECRET_KEY"));
         config.setBucket("yunai-aoteman");
-        config.setDomain(null); // 如果有自定义域名，则可以设置。http://ali-oss.iocoder.cn
+        config.setDomain(null); // 如果有自定义域名，则可以设置。http://ali-oss.example.com
         // 默认北京的 endpoint
         config.setEndpoint("oss-cn-beijing.aliyuncs.com");
 
@@ -145,7 +145,7 @@ public class S3FileClientTest {
         config.setAccessKey(System.getenv("QCLOUD_ACCESS_KEY"));
         config.setAccessSecret(System.getenv("QCLOUD_SECRET_KEY"));
         config.setBucket("aoteman-1255880240");
-        config.setDomain(null); // 如果有自定义域名，则可以设置。http://tengxun-oss.iocoder.cn
+        config.setDomain(null); // 如果有自定义域名，则可以设置。http://tengxun-oss.example.com
         // 默认上海的 endpoint
         config.setEndpoint("cos.ap-shanghai.myqcloud.com");
 
@@ -163,7 +163,7 @@ public class S3FileClientTest {
         config.setAccessKey("b7yvuhBSAGjmtPhMFcn9iMOxUOY_I06cA_p0ZUx8");
         config.setAccessSecret("kXM1l5ia1RvSX3QaOEcwI3RLz3Y2rmNszWonKZtP");
         config.setBucket("ruoyi-vue-pro");
-        config.setDomain("http://test.tender.iocoder.cn"); // 如果有自定义域名，则可以设置。http://static.tender.iocoder.cn
+        config.setDomain("http://test.tender.example.com"); // 如果有自定义域名，则可以设置。http://static.tender.example.com
         config.setEnablePathStyleAccess(false);
         // 默认上海的 endpoint
         config.setEndpoint("s3-cn-south-1.qiniucs.com");
@@ -182,7 +182,7 @@ public class S3FileClientTest {
         config.setAccessKey("b7yvuhBSAGjmtPhMFcn9iMOxUOY_I06cA_p0ZUx8");
         config.setAccessSecret("kXM1l5ia1RvSX3QaOEcwI3RLz3Y2rmNszWonKZtP");
         config.setBucket("ruoyi-vue-pro-private");
-        config.setDomain("http://t151glocd.hn-bkt.clouddn.com"); // 如果有自定义域名，则可以设置。http://static.tender.iocoder.cn
+        config.setDomain("http://t151glocd.hn-bkt.clouddn.com"); // 如果有自定义域名，则可以设置。http://static.tender.example.com
         config.setEnablePathStyleAccess(false);
         // 默认上海的 endpoint
         config.setEndpoint("s3-cn-south-1.qiniucs.com");

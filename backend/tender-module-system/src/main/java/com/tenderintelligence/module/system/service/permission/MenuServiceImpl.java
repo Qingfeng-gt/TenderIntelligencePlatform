@@ -32,7 +32,7 @@ import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.*;
 /**
  * 菜单 Service 实现
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Slf4j

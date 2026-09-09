@@ -41,7 +41,7 @@ import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.*;
 /**
  * Auth Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Slf4j

@@ -32,7 +32,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
  * 本配置类自行创建 {@link WxMpConfigStorage} / {@link WxMaConfig} bean，绕过官方的初始化逻辑，
  * 配合 {@code http-client-type: HttpComponents} 配置，只依赖 Apache HttpClient 5.x。
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Configuration(proxyBeanMethods = false)
 @Slf4j

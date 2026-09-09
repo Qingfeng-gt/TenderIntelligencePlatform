@@ -3,7 +3,7 @@ package com.tenderintelligence.framework.quartz.core.handler;
 /**
  * 任务处理器
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface JobHandler {
 

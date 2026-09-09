@@ -8,7 +8,7 @@ import com.tenderintelligence.module.system.api.logger.dto.OperateLogRespDTO;
 /**
  * 操作日志 API 接口
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface OperateLogApi extends OperateLogCommonApi {
 

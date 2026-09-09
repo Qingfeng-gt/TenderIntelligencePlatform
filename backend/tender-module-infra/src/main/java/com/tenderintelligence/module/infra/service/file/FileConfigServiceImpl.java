@@ -38,7 +38,7 @@ import static com.tenderintelligence.module.infra.enums.ErrorCodeConstants.FILE_
 /**
  * 文件配置 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

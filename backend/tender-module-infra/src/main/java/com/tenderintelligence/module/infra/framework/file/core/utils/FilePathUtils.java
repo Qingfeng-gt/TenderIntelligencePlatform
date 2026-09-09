@@ -12,7 +12,7 @@ import static com.tenderintelligence.module.infra.enums.ErrorCodeConstants.FILE_
 /**
  * 文件路径工具类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class FilePathUtils {
 

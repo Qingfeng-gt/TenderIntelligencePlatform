@@ -22,7 +22,7 @@ import static com.tenderintelligence.module.infra.dal.dataobject.logger.ApiAcces
 /**
  * API 访问日志 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Slf4j
 @Service

@@ -23,7 +23,7 @@ import static com.tenderintelligence.module.ai.util.AiUtils.validateApiKey;
 /**
  * {@link MiniMaxChatModel} 的集成测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class MiniMaxChatModelTests {
 

@@ -19,7 +19,7 @@ import static com.tenderintelligence.module.system.dal.redis.RedisKeyConstants.O
 /**
  * {@link OAuth2AccessTokenDO} 的 RedisDAO
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Repository
 public class OAuth2AccessTokenRedisDAO {

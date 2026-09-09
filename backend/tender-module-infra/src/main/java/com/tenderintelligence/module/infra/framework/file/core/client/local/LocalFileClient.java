@@ -14,7 +14,7 @@ import static com.tenderintelligence.module.infra.enums.ErrorCodeConstants.FILE_
 /**
  * 本地文件客户端
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class LocalFileClient extends AbstractFileClient<LocalFileClientConfig> {
 

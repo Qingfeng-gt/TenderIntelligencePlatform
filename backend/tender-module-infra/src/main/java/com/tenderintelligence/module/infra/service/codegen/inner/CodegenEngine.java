@@ -58,7 +58,7 @@ import static com.tenderintelligence.module.infra.enums.ErrorCodeConstants.CODEG
  *
  * 考虑到 Java 模板引擎的框架非常多，Freemarker、Velocity、Thymeleaf 等等，所以我们采用 hutool 封装的 {@link cn.hutool.extra.template.Template} 抽象
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Component
 public class CodegenEngine {

@@ -13,7 +13,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * Array 工具类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class ArrayUtils {
 

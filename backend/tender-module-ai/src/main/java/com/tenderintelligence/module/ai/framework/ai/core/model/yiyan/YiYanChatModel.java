@@ -12,7 +12,7 @@ import reactor.core.publisher.Flux;
 /**
  * 文心一言 {@link ChatModel} 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Slf4j
 @RequiredArgsConstructor

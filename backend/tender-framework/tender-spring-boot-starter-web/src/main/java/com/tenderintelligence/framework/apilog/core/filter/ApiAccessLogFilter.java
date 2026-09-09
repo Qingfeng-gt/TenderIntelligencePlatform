@@ -44,7 +44,7 @@ import static com.tenderintelligence.framework.common.util.json.JsonUtils.toJson
  *
  * 目的：记录 API 访问日志到数据库中
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Slf4j
 public class ApiAccessLogFilter extends ApiRequestFilter {

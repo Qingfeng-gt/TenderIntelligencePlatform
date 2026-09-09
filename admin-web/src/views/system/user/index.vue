@@ -1,7 +1,4 @@
 <template>
-  <doc-alert title="用户体系" url="https://doc.iocoder.cn/user-center/" />
-  <doc-alert title="Excel 导入导出" url="https://doc.iocoder.cn/excel-import-and-export/" />
-
   <ContentWrap>
       <!-- 搜索 -->
       <ContentWrap>

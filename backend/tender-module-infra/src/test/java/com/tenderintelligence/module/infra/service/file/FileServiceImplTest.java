@@ -234,7 +234,7 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class, o -> {
             o.setPath("avatar/test.jpg");
             o.setName("test.jpg");
-            o.setUrl("https://www.iocoder.cn/test.jpg?token=123");
+            o.setUrl("https://www.example.com/test.jpg?token=123");
         });
 
         // 调用
@@ -244,7 +244,7 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         FileDO file = fileMapper.selectById(fileId);
         assertEquals("avatar/test.jpg", file.getPath());
         assertEquals("test.jpg", file.getName());
-        assertEquals("https://www.iocoder.cn/test.jpg", file.getUrl());
+        assertEquals("https://www.example.com/test.jpg", file.getUrl());
     }
 
     @Test

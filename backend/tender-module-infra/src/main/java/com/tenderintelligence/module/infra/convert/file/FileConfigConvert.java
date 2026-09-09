@@ -9,7 +9,7 @@ import org.mapstruct.factory.Mappers;
 /**
  * 文件配置 Convert
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Mapper
 public interface FileConfigConvert {

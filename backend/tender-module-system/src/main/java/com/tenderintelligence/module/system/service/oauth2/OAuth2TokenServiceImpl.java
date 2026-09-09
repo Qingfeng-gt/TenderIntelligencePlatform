@@ -38,7 +38,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * OAuth2.0 Token Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 public class OAuth2TokenServiceImpl implements OAuth2TokenService {

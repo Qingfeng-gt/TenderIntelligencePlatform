@@ -18,7 +18,7 @@ import static com.tenderintelligence.module.system.enums.ErrorCodeConstants.OAUT
 /**
  * OAuth2.0 授权码 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

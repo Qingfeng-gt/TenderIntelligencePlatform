@@ -94,7 +94,7 @@ import static com.tenderintelligence.framework.common.util.collection.Collection
 /**
  * AI Model 模型工厂的实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class AiModelFactoryImpl implements AiModelFactory {
 

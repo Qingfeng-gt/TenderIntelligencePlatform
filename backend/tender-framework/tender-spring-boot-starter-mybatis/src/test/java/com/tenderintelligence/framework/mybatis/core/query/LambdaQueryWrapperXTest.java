@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link LambdaQueryWrapperX} 的单元测试
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public class LambdaQueryWrapperXTest {
 

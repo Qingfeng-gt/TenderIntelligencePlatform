@@ -1,6 +1,4 @@
 <template>
-  <doc-alert title="功能权限" url="https://doc.iocoder.cn/resource-permission" />
-
   <ContentWrap>
     <!-- 搜索工作栏 -->
     <el-form

@@ -1,6 +1,6 @@
 # 招投标智能平台 —— 后端服务(tender-server)
 
-基于 [芋道 ruoyi-vue-pro](https://gitee.com/zhijiantianya/ruoyi-vue-pro) 框架二次开发的招投标智能平台后端,单体多模块 Maven 架构。
+基于 [ruoyi-vue-pro](https://gitee.com/zhijiantianya/ruoyi-vue-pro) 框架二次开发的招投标智能平台后端,单体多模块 Maven 架构。
 
 > 2026-09 已按产品定位(标讯采集 + 会员 AI 写标书)完成初次裁剪:
 > 移除 `tender-module-bpm`(工作流)、`tender-module-pms`(项目管理)、`tender-module-report`(大屏报表);

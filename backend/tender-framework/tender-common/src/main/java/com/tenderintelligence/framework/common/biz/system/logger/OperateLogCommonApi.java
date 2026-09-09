@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 /**
  * 操作日志 API 接口
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 public interface OperateLogCommonApi {
 

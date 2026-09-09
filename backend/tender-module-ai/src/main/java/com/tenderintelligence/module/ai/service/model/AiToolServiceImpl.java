@@ -22,7 +22,7 @@ import static com.tenderintelligence.module.ai.enums.ErrorCodeConstants.TOOL_NOT
 /**
  * AI 工具 Service 实现类
  *
- * @author 芋道源码
+ * @author Tender Intelligence
  */
 @Service
 @Validated

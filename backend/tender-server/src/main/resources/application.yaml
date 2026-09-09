@@ -97,7 +97,7 @@ aj:
     cache-number: 1000 # local 缓存的阈值,达到这个值，清除缓存
     timing-clear: 180 # local定时清除过期缓存(单位秒),设置为0代表不执行
     type: blockPuzzle # 验证码类型 default 三种都实例化。blockPuzzle 滑块拼图、clickWord 文字点选、pictureWord 文本输入
-    water-mark: 芋道源码 # 右下角水印文字(我的水印)，可使用 https://tool.chinaz.com/tools/unicode.aspx 中文转 Unicode，Linux 可能需要转 unicode
+    water-mark: 招投标情报平台 # 右下角水印文字(我的水印)，可使用 https://tool.chinaz.com/tools/unicode.aspx 中文转 Unicode，Linux 可能需要转 unicode
     interference-options: 0 # 滑动干扰项(0/1/2)
     req-frequency-limit-enable: false # 接口请求次数一分钟限制是否开启 true|false
     req-get-lock-limit: 5 # 验证失败 5 次，get接口锁定
@@ -105,32 +105,6 @@ aj:
     req-get-minute-limit: 30 # get 接口一分钟内请求数限制
     req-check-minute-limit: 60 # check 接口一分钟内请求数限制
     req-verify-minute-limit: 60 # verify 接口一分钟内请求数限制
-
---- #################### 消息队列相关 ####################
-
-# rocketmq 配置项，对应 RocketMQProperties 配置类
-rocketmq:
-  # Producer 配置项
-  producer:
-    group: ${spring.application.name}_PRODUCER # 生产者分组
-
-spring:
-  # Kafka 配置项，对应 KafkaProperties 配置类
-  kafka:
-    # Kafka Producer 配置项
-    producer:
-      acks: 1 # 0-不应答。1-leader 应答。all-所有 leader 和 follower 应答。
-      retries: 3 # 发送失败时，重试发送的次数
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer # 消息的 value 的序列化
-    # Kafka Consumer 配置项
-    consumer:
-      auto-offset-reset: earliest # 设置消费者分组最初的消费进度为 earliest 。可参考博客 https://blog.csdn.net/lishuangzhe7047/article/details/74530417 理解
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: '*'
-    # Kafka Consumer Listener 监听器配置
-    listener:
-      missing-topics-fatal: false # 消费监听接口监听的主题不存在时，默认会报错。所以通过设置为 false ，解决报错
 
 --- #################### AI 相关配置 ####################
 
@@ -153,28 +127,6 @@ spring:
         client:
           host: 127.0.0.1
           port: 19530
-    openai: # OpenAI 官方
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-      api-key: ${OPENAI_API_KEY:sk-xxxx}
-    azure: # OpenAI 微软
-      openai:
-        endpoint: https://eastusprejade.openai.azure.com
-    anthropic: # Anthropic Claude
-      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
-      api-key: ${ANTHROPIC_API_KEY:sk-xxxx}
-    ollama:
-      base-url: http://127.0.0.1:11434
-      chat:
-        model: llama3
-    dashscope: # 通义千问
-      api-key: ${DASHSCOPE_API_KEY:sk-xxxx}
-    deepseek: # DeepSeek
-      api-key: ${DEEPSEEK_API_KEY:sk-xxxx}
-      chat:
-        options:
-          model: deepseek-v4-flash
-    model:
-      rerank: false # 是否开启“通义千问”的 Rerank 模型，填写 dashscope 开启
     mcp:
       server:
         enabled: false
@@ -191,7 +143,7 @@ spring:
               url: http://127.0.0.1:8089
               sse-endpoint: /sse
         annotation-scanner:
-          enabled: false # TODO @芋艿：有 bug https://github.com/spring-projects/spring-ai/issues/4917 需要官方修复
+          enabled: false # 存在 bug https://github.com/spring-projects/spring-ai/issues/4917 需要官方修复
 
 tender:
   ai:
@@ -247,7 +199,7 @@ tender:
       enable: true
       api-key: ${WEB_SEARCH_API_KEY:sk-xxxx}
 
---- #################### 芋道相关配置 ####################
+--- #################### 项目相关配置 ####################
 
 tender:
   info:
@@ -259,7 +211,7 @@ tender:
 
   web:
     admin-ui:
-      url: http://dashboard.tender.iocoder.cn # Admin 管理后台 UI 的地址
+      url: http://127.0.0.1:80 # Admin 管理后台 UI 的地址
   xss:
     enable: false
     exclude-urls: # 如下两个 url，仅仅是为了演示，去掉配置也没关系
@@ -267,7 +219,6 @@ tender:
       - ${management.endpoints.web.base-path}/** # 不处理 Actuator 的请求
   security:
     permit-all-urls:
-      - /admin-api/mp/open/** # 微信公众号开放平台，微信回调接口，不需要登录
       - /admin-api/notice/** # 标讯用户端门户，公告查询无需登录
   api-encrypt:
     enable: false # 是否开启 API 加密。默认关闭，避免低版本 JDK 8（8u120 以下）启动时 bcprov 的 JCE 认证报错
@@ -280,23 +231,11 @@ tender:
     enable: true # websocket的开关
     path: /infra/ws # 路径
     sender-type: local # 消息发送的类型，可选值为 local、redis、rocketmq、kafka、rabbitmq
-    sender-rocketmq:
-      topic: ${spring.application.name}-websocket # 消息发送的 RocketMQ Topic
-      consumer-group: ${spring.application.name}-websocket-consumer # 消息发送的 RocketMQ Consumer Group
-    sender-rabbitmq:
-      exchange: ${spring.application.name}-websocket-exchange # 消息发送的 RabbitMQ Exchange
-      queue: ${spring.application.name}-websocket-queue # 消息发送的 RabbitMQ Queue
-    sender-kafka:
-      topic: ${spring.application.name}-websocket # 消息发送的 Kafka Topic
-      consumer-group: ${spring.application.name}-websocket-consumer # 消息发送的 Kafka Consumer Group
   swagger:
-    title: 芋道快速开发平台
-    description: 提供管理后台、用户 App 的所有功能
+    title: 招投标情报平台
+    description: 提供管理后台、标讯用户端门户的所有功能
     version: ${tender.info.version}
     url: ${tender.web.admin-ui.url}
-    email: xingyu4j@vip.qq.com
-    license: MIT
-    license-url: https://gitee.com/zhijiantianya/ruoyi-vue-pro/blob/master/LICENSE
   codegen:
     base-package: ${tender.info.base-package}
     db-schemas: ${spring.datasource.dynamic.datasource.master.name}
@@ -305,49 +244,6 @@ tender:
     delete-batch-enable: true # 是否生成批量删除接口
     unit-test-enable: false # 是否生成单元测试
     import-enable: false # 是否生成 Excel 导入接口
-  tenant: # 多租户相关配置项
-    enable: true
-    ignore-urls:
-      - /jmreport/* # 积木报表，无法携带租户编号
-      - /admin-api/notice/** # 标讯用户端门户，公开查询
-    ignore-visit-urls:
-      - /admin-api/system/user/profile/**
-      - /admin-api/system/auth/**
-    ignore-tables:
-      - member_user
-    ignore-caches:
-      - user_role_ids
-      - permission_menu_ids
-      - oauth_client
-      - notify_template
-      - mail_account
-      - mail_template
-      - sms_template
-      - iot:device
-      - iot:thing_model_list
-  sms-code: # 短信验证码相关的配置项
-    expire-times: 10m
-    send-frequency: 1m
-    send-maximum-quantity-per-day: 10
-    begin-code: 9999 # 这里配置 9999 的原因是，测试方便。
-    end-code: 9999 # 这里配置 9999 的原因是，测试方便。
-  trade:
-    order:
-      pay-expire-time: 2h # 支付的过期时间
-      receive-expire-time: 14d # 收货的过期时间
-      comment-expire-time: 7d # 评论的过期时间
-      status-sync-to-wxa-enable: true # 是否同步订单状态到微信小程序
-    express:
-      client: kd_100
-      kd-niao:
-        api-key: cb022f1e-48f1-4c4a-a723-9001ac9676b8
-        business-id: 1809751
-        request-type: 1002 # 免费版 1002；付费版 8001
-      kd100:
-        key: pLXUGAwK5305
-        customer: E77DF18BE109F454A5CD319E44BF5177
-  iot:
-    message-bus:
-      type: redis # 消息总线的类型
-
+  tenant: # 多租户相关配置项（单租户模式，始终关闭）
+    enable: false
 debug: false

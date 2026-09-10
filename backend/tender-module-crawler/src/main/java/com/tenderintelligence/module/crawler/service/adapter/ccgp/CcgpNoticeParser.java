@@ -1,5 +1,6 @@
-package com.tenderintelligence.module.crawler.service;
+package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 
+import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
 
 import java.math.BigDecimal;

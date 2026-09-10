@@ -10,7 +10,8 @@ import com.tenderintelligence.module.crawler.enums.CrawlerTaskStatusEnum;
 import com.tenderintelligence.module.crawler.enums.ErrorCodeConstants;
 import com.tenderintelligence.module.crawler.service.CrawlService;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
-import com.tenderintelligence.module.crawler.service.SourceAdapter;
+import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
+
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,7 @@
-package com.tenderintelligence.module.crawler.service;
+package com.tenderintelligence.module.crawler.service.adapter.ztb_gz;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
 
 import java.math.BigDecimal;

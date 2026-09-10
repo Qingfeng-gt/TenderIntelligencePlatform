@@ -1,36 +1,36 @@
 [ {
   "contentPath" : "java/InfraCategoryListReqVO",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/controller/admin/demo/vo/InfraCategoryListReqVO.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/controller/admin/demo/vo/InfraCategoryListReqVO.java"
 }, {
   "contentPath" : "java/InfraCategoryRespVO",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/controller/admin/demo/vo/InfraCategoryRespVO.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/controller/admin/demo/vo/InfraCategoryRespVO.java"
 }, {
   "contentPath" : "java/InfraCategorySaveReqVO",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/controller/admin/demo/vo/InfraCategorySaveReqVO.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/controller/admin/demo/vo/InfraCategorySaveReqVO.java"
 }, {
   "contentPath" : "java/InfraCategoryController",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/controller/admin/demo/InfraCategoryController.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/controller/admin/demo/InfraCategoryController.java"
 }, {
   "contentPath" : "java/InfraCategoryDO",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/dal/dataobject/demo/InfraCategoryDO.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/dal/dataobject/demo/InfraCategoryDO.java"
 }, {
   "contentPath" : "java/InfraCategoryMapper",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/dal/mysql/demo/InfraCategoryMapper.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/dal/mysql/demo/InfraCategoryMapper.java"
 }, {
   "contentPath" : "xml/InfraCategoryMapper",
   "filePath" : "tender-module-infra/src/main/resources/mapper/demo/InfraCategoryMapper.xml"
 }, {
   "contentPath" : "java/InfraCategoryServiceImpl",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/service/demo/InfraCategoryServiceImpl.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/service/demo/InfraCategoryServiceImpl.java"
 }, {
   "contentPath" : "java/InfraCategoryService",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/service/demo/InfraCategoryService.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/service/demo/InfraCategoryService.java"
 }, {
   "contentPath" : "java/InfraCategoryServiceImplTest",
-  "filePath" : "tender-module-infra/src/test/java/cn/iocoder/tender/module/infra/service/demo/InfraCategoryServiceImplTest.java"
+  "filePath" : "tender-module-infra/src/test/java/com/tenderintelligence/module/infra/service/demo/InfraCategoryServiceImplTest.java"
 }, {
   "contentPath" : "java/ErrorCodeConstants_手动操作",
-  "filePath" : "tender-module-infra/src/main/java/cn/iocoder/tender/module/infra/enums/ErrorCodeConstants_手动操作.java"
+  "filePath" : "tender-module-infra/src/main/java/com/tenderintelligence/module/infra/enums/ErrorCodeConstants_手动操作.java"
 }, {
   "contentPath" : "sql/sql",
   "filePath" : "sql/sql.sql"

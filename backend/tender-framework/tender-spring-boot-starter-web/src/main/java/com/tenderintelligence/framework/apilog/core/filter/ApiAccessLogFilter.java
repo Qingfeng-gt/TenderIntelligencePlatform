@@ -110,8 +110,8 @@ public class ApiAccessLogFilter extends ApiRequestFilter {
         }
 
         // 处理用户信息
-        accessLog.setUserId(WebFrameworkUtils.getLoginUserId(request))
-                .setUserType(WebFrameworkUtils.getLoginUserType(request));
+        accessLog.setUserId(WebFrameworkUtils.getLoginUserId(request));
+        accessLog.setUserType(WebFrameworkUtils.getLoginUserType(request));
         // 设置访问结果
         CommonResult<?> result = WebFrameworkUtils.getCommonResult(request);
         if (result != null) {
@@ -123,9 +123,12 @@ public class ApiAccessLogFilter extends ApiRequestFilter {
             accessLog.setResultCode(GlobalErrorCodeConstants.SUCCESS.getCode()).setResultMsg("");
         }
         // 设置请求字段
-        accessLog.setTraceId(TracerUtils.getTraceId()).setApplicationName(applicationName)
-                .setRequestUrl(request.getRequestURI()).setRequestMethod(request.getMethod())
-                .setUserAgent(ServletUtils.getUserAgent(request)).setUserIp(ServletUtils.getClientIP(request));
+        accessLog.setTraceId(TracerUtils.getTraceId());
+        accessLog.setApplicationName(applicationName);
+        accessLog.setRequestUrl(request.getRequestURI());
+        accessLog.setRequestMethod(request.getMethod());
+        accessLog.setUserAgent(ServletUtils.getUserAgent(request));
+        accessLog.setUserIp(ServletUtils.getClientIP(request));
         String[] sanitizeKeys = accessLogAnnotation != null ? accessLogAnnotation.sanitizeKeys() : null;
         Boolean requestEnable = accessLogAnnotation != null ? accessLogAnnotation.requestEnable() : Boolean.TRUE;
         if (!BooleanUtil.isFalse(requestEnable)) { // 默认记录，所以判断 !false
@@ -154,7 +157,9 @@ public class ApiAccessLogFilter extends ApiRequestFilter {
                     operationAnnotation != null ? operationAnnotation.summary() : null;
             OperateTypeEnum operateType = accessLogAnnotation != null && accessLogAnnotation.operateType().length > 0 ?
                     accessLogAnnotation.operateType()[0] : parseOperateLogType(request);
-            accessLog.setOperateModule(operateModule).setOperateName(operateName).setOperateType(operateType.getType());
+            accessLog.setOperateModule(operateModule);
+            accessLog.setOperateName(operateName);
+            accessLog.setOperateType(operateType.getType());
         }
         return true;
     }

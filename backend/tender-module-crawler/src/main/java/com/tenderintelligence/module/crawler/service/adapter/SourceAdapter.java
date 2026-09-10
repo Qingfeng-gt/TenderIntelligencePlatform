@@ -1,6 +1,7 @@
-package com.tenderintelligence.module.crawler.service;
+package com.tenderintelligence.module.crawler.service.adapter;
 
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
+import com.tenderintelligence.module.crawler.service.CrawlStats;
 
 /**
  * 数据源适配器接口: 两段式采集(列表页 → 详情页) → 解析字段 → 入库

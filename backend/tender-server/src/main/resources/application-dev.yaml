@@ -7,19 +7,6 @@ spring:
   autoconfigure:
     # noinspection SpringBootApplicationYaml
     exclude:
-      - org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration # 禁用 AI 模块的 Qdrant，手动创建
-      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration # 禁用 AI 模块的 Milvus，手动创建
-  # AI 多模型:关闭 Spring AI 官方模型自动装配(模块内动态创建多平台模型,避免多个 ChatModel bean 冲突)
-  ai:
-    model:
-      chat: false
-      embedding: false
-      image: false
-      speech: false
-      audio: false
-    chat:
-      client:
-        enabled: false
   # 数据源配置项
   datasource:
     druid: # Druid 【监控】相关的全局配置

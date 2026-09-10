@@ -3,13 +3,14 @@
 > 环境: WSL(Ubuntu) 内 MySQL + Java17 + Maven; Windows 上 Node(vite 前端; user-web 可直接在 Windows 跑,代理到 WSL 后端)
 > 目录: 后端 `backend/`(tender-server 多模块); 前端 `user-web/`
 
-## 一、数据库(一次性)
+## 一、数据库(一次性初始化)
 
 ```bash
-# WSL 内执行(库: ruoyi-vue-pro-jdk8)
+# WSL 内执行(库: tender,与 application.yaml 一致)
 cd /mnt/d/MyProjects/TenderIntelligencePlatform/backend/sql/mysql
-mysql -uroot -p123456 ruoyi-vue-pro-jdk8 < demo-crawler-bid.sql      # 建表 + notice 扩展字段
-mysql -uroot -p123456 ruoyi-vue-pro-jdk8 < demo-crawler-bid-seed.sql # 爬虫站点种子(幂等)
+mysql -uroot -p123456 tender < tender.sql   # 框架基础 29 张表(含会员表/种子,仅初始化执行一次)
+mysql -uroot -p123456 tender < notice.sql   # 业务全量:标讯+爬虫+投标 4 表 + 菜单/站点种子(仅初始化执行一次)
+# (启用 Quartz 的 dev/test 环境再执行 quartz.sql;local 不需要)
 ```
 
 ## 二、启动后端(WSL)

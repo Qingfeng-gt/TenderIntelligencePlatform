@@ -1,7 +1,23 @@
--- 招投标公告(标讯)表
-CREATE TABLE IF NOT EXISTS `notice` (
+-- =====================================================================
+-- 业务全量初始化(一次性):标讯 + 爬虫采集 + 用户投标
+-- 执行方式: mysql -uroot -p tender < notice.sql   (须在 tender.sql 之后执行)
+-- 模式: DROP + CREATE 全量重建(同 tender.sql),无增量/演进片段;仅用于初始化
+-- 由原 notice.sql + demo-crawler-bid.sql + demo-crawler-bid-seed.sql + demo-crawler-admin.sql 合并
+-- =====================================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ---------------------------------------------------------------------
+-- 1) 招投标公告(标讯)表
+--    扩展字段(project_no/source_url/deadline/open_time/region_code)为爬虫入库所需,
+--    直接建表,注意: source_url 为唯一去重键,允许 NULL(MySQL 唯一索引允许多个 NULL)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `notice`;
+CREATE TABLE `notice` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '公告编号',
   `title` varchar(512) NOT NULL DEFAULT '' COMMENT '公告标题',
+  `project_no` varchar(128) NOT NULL DEFAULT '' COMMENT '项目编号(源站)',
   `type` varchar(16) NOT NULL DEFAULT '' COMMENT '公告类型:tender 招标/win 中标/change 变更/explore 采购',
   `province` varchar(32) NOT NULL DEFAULT '' COMMENT '省份',
   `city` varchar(32) NOT NULL DEFAULT '' COMMENT '城市',
@@ -13,7 +29,11 @@ CREATE TABLE IF NOT EXISTS `notice` (
   `contact_phone` varchar(32) NOT NULL DEFAULT '' COMMENT '联系电话',
   `content` longtext COMMENT '公告原文(HTML)',
   `source` varchar(128) NOT NULL DEFAULT '' COMMENT '来源网站',
+  `source_url` varchar(512) DEFAULT NULL COMMENT '源站详情URL(唯一去重键)',
   `publish_time` datetime NOT NULL COMMENT '发布时间',
+  `deadline` datetime DEFAULT NULL COMMENT '投标截止时间',
+  `open_time` datetime DEFAULT NULL COMMENT '开标时间',
+  `region_code` varchar(16) NOT NULL DEFAULT '' COMMENT '源站地区代码',
   `creator` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater` varchar(64) DEFAULT '' COMMENT '更新者',
@@ -21,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `notice` (
   `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户编号',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_source_url` (`source_url`),
   KEY `idx_type_publish` (`type`, `publish_time`),
   KEY `idx_province` (`province`),
   KEY `idx_industry` (`industry`),
@@ -50,5 +71,111 @@ INSERT INTO `notice` (`id`, `title`, `type`, `province`, `city`, `industry`, `bu
 (19, '某天然气管道工程一标段钢管采购中标结果公告', 'win', '内蒙古自治区', '鄂尔多斯市', '能源化工', 12800.00, '鄂尔多斯市中浩能源有限公司', '内蒙古蒙正招标有限公司', '敖先生', '0477-3890002', '<p>中标人:<strong>宝鸡石油钢管有限责任公司</strong>,中标金额 12736 万元。</p>', '内蒙古公共资源交易网', '2026-09-02 09:05:00', '', '', b'0', 0),
 (20, '某省级政务云平台扩容升级项目公开招标公告', 'tender', '贵州省', '贵阳市', '软件服务', 8600.00, '贵州省大数据发展管理局', '贵州聚力项目管理有限公司', '陈老师', '0851-86993122', '<h3>采购内容</h3><p>政务云平台计算节点扩容 2000 核、存储扩容 2PB,政务数据治理服务及安全防护提升,服务期 24 个月。</p>', '贵州省政府采购网', '2026-09-01 14:50:00', '', '', b'0', 0);
 
--- 修正 auto_increment(种子数据已占用 1-20)
-ALTER TABLE `notice` AUTO_INCREMENT = 100;
+-- ---------------------------------------------------------------------
+-- 2) 爬虫站点配置(适配器可扩展,新源站只需加一行配置+适配器)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `crawler_site`;
+CREATE TABLE `crawler_site` (
+  `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '站点编号',
+  `name`        varchar(64)  NOT NULL                  COMMENT '站点名称',
+  `code`        varchar(32)  NOT NULL                  COMMENT '站点标识,对应 SourceAdapter 实现',
+  `enabled`     bit(1)       NOT NULL DEFAULT b'1'     COMMENT '是否启用',
+  `channels`    varchar(1024) NOT NULL DEFAULT ''      COMMENT '频道JSON:[{path,name,type,pageCount}]',
+  `interval_ms` bigint       NOT NULL DEFAULT 3000     COMMENT '详情页请求间隔(ms,防反爬)',
+  `config`      varchar(2048) NOT NULL DEFAULT ''      COMMENT '抓取配置JSON(UA/首访URL等)',
+  `creator`     varchar(64)  DEFAULT '' COMMENT '创建者',
+  `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`     varchar(64)  DEFAULT '' COMMENT '更新者',
+  `update_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`     bit(1)       NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`   bigint       NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='爬虫站点配置';
+
+-- ---------------------------------------------------------------------
+-- 3) 采集任务日志
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `crawler_task`;
+CREATE TABLE `crawler_task` (
+  `id`             bigint      NOT NULL AUTO_INCREMENT COMMENT '任务编号',
+  `site_code`      varchar(32) NOT NULL                 COMMENT '站点标识',
+  `start_time`     datetime    NOT NULL                 COMMENT '开始时间',
+  `end_time`       datetime    DEFAULT NULL             COMMENT '结束时间',
+  `status`         varchar(16) NOT NULL DEFAULT 'RUNNING' COMMENT 'RUNNING/SUCCESS/FAILED',
+  `list_fetched`   int         NOT NULL DEFAULT 0 COMMENT '列表页抓取数',
+  `list_parsed`    int         NOT NULL DEFAULT 0 COMMENT '列表解析出公告数',
+  `detail_fetched` int         NOT NULL DEFAULT 0 COMMENT '详情页抓取成功数',
+  `detail_failed`  int         NOT NULL DEFAULT 0 COMMENT '详情页抓取失败数',
+  `new_insert`     int         NOT NULL DEFAULT 0 COMMENT '新增入库数',
+  `updated`        int         NOT NULL DEFAULT 0 COMMENT '变更更新数',
+  `error_msg`      varchar(512) NOT NULL DEFAULT '' COMMENT '失败原因',
+  `creator`        varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`        varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`        bit(1)      NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`      bigint      NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  KEY `idx_site_start` (`site_code`, `start_time`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='爬虫采集任务日志';
+
+-- ---------------------------------------------------------------------
+-- 4) 投标项目(用户招投标闭环,演示用户 user_id=1)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `bid_project`;
+CREATE TABLE `bid_project` (
+  `id`            bigint        NOT NULL AUTO_INCREMENT COMMENT '投标项目编号',
+  `user_id`       bigint        NOT NULL                 COMMENT '发起用户(演示默认1,正式接会员)',
+  `notice_id`     bigint        NOT NULL                 COMMENT '源公告编号(notice.id)',
+  `project_name`  varchar(512)  NOT NULL                 COMMENT '项目名称(冗余自公告)',
+  `deadline`      datetime      DEFAULT NULL             COMMENT '投标截止时间(冗余自公告)',
+  `bid_amount`    decimal(18,2) DEFAULT NULL             COMMENT '拟投标金额(万元)',
+  `bid_file_name` varchar(256)  NOT NULL DEFAULT ''      COMMENT '投标文件名(演示文本)',
+  `status`        varchar(24)   NOT NULL DEFAULT 'SUBMITTED'
+    COMMENT 'SUBMITTED已递交/OTB待开标/WON中标/LOST未中标/ABANDONED放弃',
+  `remark`        varchar(512)  NOT NULL DEFAULT '' COMMENT '备注',
+  `creator`       varchar(64)   DEFAULT '' COMMENT '创建者',
+  `create_time`   datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater`       varchar(64)   DEFAULT '' COMMENT '更新者',
+  `update_time`   datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`       bit(1)        NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id`     bigint        NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_notice` (`notice_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='投标项目';
+
+-- ---------------------------------------------------------------------
+-- 5) 爬虫站点种子
+-- ---------------------------------------------------------------------
+-- 中国政府采购网(四个频道: 公开招标/中标/更正/询价)
+INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interval_ms`, `config`, `tenant_id`) VALUES
+(1, '中国政府采购网', 'ccgp', b'1',
+ '[{"path":"/cggg/dfgg/gkzb/","name":"地方-公开招标","type":"tender","pageCount":1},{"path":"/cggg/dfgg/zbgg/","name":"地方-中标公告","type":"win","pageCount":1},{"path":"/cggg/dfgg/gzgg/","name":"地方-更正公告","type":"change","pageCount":1},{"path":"/cggg/dfgg/xjgg/","name":"地方-询价公告","type":"explore","pageCount":1}]',
+ 3000,
+ '{"baseUrl":"http://www.ccgp.gov.cn","initialUrl":"http://www.ccgp.gov.cn/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}',
+ 0);
+
+-- 贵州省招标投标公共服务平台(JSON API 源站; channels[].path = search 的 noticeType 类别编码)
+-- 2026-09-08 实测: 该站 search 列表接口当前返回 0 条(列表数据下线), GetDetail 可用, 源站恢复后即自动采到数据
+INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interval_ms`, `config`, `tenant_id`) VALUES
+(2, '贵州省招标投标公共服务平台', 'ztb_gz', b'1',
+ '[{"path":"A01","name":"招标公告","type":"tender","pageCount":1},{"path":"A02","name":"变更公告","type":"change","pageCount":1},{"path":"A04","name":"中标结果公示","type":"win","pageCount":1}]',
+ 3000,
+ '{"baseUrl":"http://ztb.guizhou.gov.cn","initialUrl":"http://ztb.guizhou.gov.cn/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","xhrReferer":"http://ztb.guizhou.gov.cn/trade/?category=affiche"}',
+ 0);
+
+-- ---------------------------------------------------------------------
+-- 6) 后台「数据采集中心」菜单(超级管理员自动拥有全部菜单,无需 system_role_menu 记录)
+-- ---------------------------------------------------------------------
+INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES
+(12800, '数据采集中心', '', 2, 30, 0, '/crawler', 'ep:data-analysis', 'crawler/index', 'CrawlerCenter', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0')
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `parent_id` = VALUES(`parent_id`),
+  `path` = VALUES(`path`),
+  `component` = VALUES(`component`),
+  `component_name` = VALUES(`component_name`);
+
+SET FOREIGN_KEY_CHECKS = 1;

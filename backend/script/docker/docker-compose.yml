@@ -16,11 +16,10 @@ services:
     volumes:
       - mysql:/var/lib/mysql/
       # docker-entrypoint-initdb.d 按文件名排序执行,数字前缀保证导入顺序
-      - ./sql/mysql/tender.sql:/docker-entrypoint-initdb.d/1-tender.sql:ro
-      - ./sql/mysql/notice.sql:/docker-entrypoint-initdb.d/2-notice.sql:ro
-      - ./sql/mysql/demo-crawler-bid.sql:/docker-entrypoint-initdb.d/3-demo-crawler-bid.sql:ro
-      - ./sql/mysql/demo-crawler-bid-seed.sql:/docker-entrypoint-initdb.d/4-demo-crawler-bid-seed.sql:ro
-      - ./sql/mysql/quartz.sql:/docker-entrypoint-initdb.d/5-quartz.sql:ro
+      # 路径相对于本文件(backend/script/docker/),指向 backend/sql/mysql/
+      - ../../sql/mysql/tender.sql:/docker-entrypoint-initdb.d/1-tender.sql:ro
+      - ../../sql/mysql/notice.sql:/docker-entrypoint-initdb.d/2-notice.sql:ro
+      - ../../sql/mysql/quartz.sql:/docker-entrypoint-initdb.d/3-quartz.sql:ro
 
   redis:
     container_name: tender-redis

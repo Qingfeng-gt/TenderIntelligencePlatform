@@ -70,10 +70,6 @@ public class BannerApplicationRunner implements ApplicationRunner {
             if (isNotPresent("com.tenderintelligence.module.pay.framework.pay.config.PayConfiguration")) {
                 System.out.println("[支付系统 tender-module-pay - 已禁用][参考 https://doc.example.com/pay/build/ 开启]");
             }
-            // AI 大模型
-            if (isNotPresent("com.tenderintelligence.module.ai.framework.web.config.AiWebConfiguration")) {
-                System.out.println("[AI 大模型 tender-module-ai - 已禁用][参考 https://doc.example.com/ai/build/ 开启]");
-            }
             // IoT 物联网
             if (isNotPresent("com.tenderintelligence.module.iot.framework.web.config.IotWebConfiguration")) {
                 System.out.println("[IoT 物联网 tender-module-iot - 已禁用][参考 https://doc.example.com/iot/build/ 开启]");

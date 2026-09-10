@@ -107,7 +107,7 @@ tender-module-infra  ←  tender-module-system  ←  tender-module-notice  ←  
 
 ## 六、tender-module-ai —— AI 套件(裁剪版,会员写标书)
 
-> 已裁剪:绘图(Midjourney)、音乐(Suno)、思维导图、工作流(TinyFlow);保留的 10 张表已通过 `sql/mysql/ai-trimmed.sql` 建好。
+> 2026-09 该模块已随单租赁化裁剪**整体删除**(`ai-trimmed.sql`、10 张 AI 表、前端页面同步移除),本节保留作设计备忘;若恢复,需重建模块与表。
 
 - **模型管理**:平台引擎(OpenAI/Azure/Anthropic/Ollama/通义/硅基流动/DeepSeek/豆包/混元/星火/Grok 等)、API Key、多模型 —— `ai_model`、`ai_api_key`
 - **对话 Chat**:会话列表、消息记录、聊天角色(Persona)、SSE 流式回复、上下文、联网搜索(WebSearch) —— `ai_chat_conversation`、`ai_chat_message`、`ai_chat_role`
@@ -160,19 +160,16 @@ java -jar tender-server/target/tender-server.jar --spring.profiles.active=local
 ## 数据库
 
 - 库:`tender`(master + slave 指向同一库,slave 为懒加载模拟)
-- 初始化脚本 `backend/sql/mysql/`(均导入 `tender` 库,**按此顺序**):
+- 初始化脚本 `backend/sql/mysql/`,按序导入 `tender` 库,**一次性初始化**(均为全量 DROP+CREATE,详解见 `doc/SQL脚本说明.md`):
 
 ```
-1. tender.sql            # 基础表:infra_/system_/qrtz_(demo 表与 demo 菜单已剥离)
-2. notice.sql            # 标讯表 + 演示种子(幂等)
-3. demo-crawler-bid.sql  # notice 扩展字段 + crawler_site/crawler_task(依赖 notice)
-4. demo-crawler-bid-seed.sql  # 爬虫站点种子(幂等)
-5. demo-crawler-admin.sql  # 数据采集中心菜单种子(幂等, 老库可单独执行)
-6. quartz.sql            # QRTZ_* 定时任务表(可选,启用 Quartz 时)
-7. ai-trimmed.sql        # AI 精简版 10 张表(幂等)
+1. tender.sql            # 框架基础 29 张表:infra_/system_/member_user(含种子数据,仅初始化)
+2. notice.sql            # 业务全量:标讯/爬虫/投标 4 张表 + 菜单与站点种子(仅初始化)
+3. quartz.sql            # QRTZ_* 11 张定时任务表(仅启用 Quartz 的 dev/test 环境)
 ```
 
-> **2026-09 裁剪现状**:库内共 68 张表(58 张基础表 + 10 张 AI 表),全部有代码引用、无缺表(仅 `test_data` 为单元测试 H2 专用表,无需在 MySQL 中存在),`mvn compile` 通过。若后续要加回功能(如工作流审批),需重新导入对应模块并补建表。
+> **2026-09 裁剪现状**:库内共 33 张表(29 张基础表 + notice/crawler_site/crawler_task/bid_project),AI 模块已整体裁剪(`tender-module-ai` 与 ai-trimmed.sql、10 张 AI 表一起删除)。全部有代码引用、无缺表,`mvn compile` 通过。若后续要加回功能(如工作流审批),需重新导入对应模块并补建表。
+> **2026-09-09 种子清理**:框架自带的演示/测试/已裁模块(MES、IoT、HRM、商城、工作流、CMS 等)种子数据已清除,收敛为系统必需最小集合 —— 仅 admin 超管、15 个字典类型、45 条菜单、4 条定时任务、1 条数据库存储配置、1 条平台公告,另保留演示数据(demo123 会员 + 20 条演示标讯)。清理脚本:`doc/archive/clean_tender_sql.py`。
 
 ## 后续裁剪方向(备忘)
 

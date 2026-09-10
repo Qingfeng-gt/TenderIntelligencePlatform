@@ -30,7 +30,6 @@
         <module>tender-module-crawler</module>
         <module>tender-module-bid</module>
 <!--        <module>tender-module-im</module>-->
-        <module>tender-module-ai</module>
     </modules>
 
     <name>${project.artifactId}</name>

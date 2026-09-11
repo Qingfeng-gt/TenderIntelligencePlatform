@@ -150,9 +150,11 @@ CREATE TABLE `bid_project` (
 -- 5) 爬虫站点种子
 -- ---------------------------------------------------------------------
 -- 中国政府采购网(四个频道: 公开招标/中标/更正/询价)
+-- 2026-09-11 实测: 单日公告约 14 页(gkzb 频道约 300 条/天), pageCount=1 只能覆盖当天零头, 属大面积漏标;
+-- 取 5 页 = 约 8 小时积压量, 对应 2 小时的采集间隔有 4 倍安全余量, 单轮详情约 356 条(限速 3s ≈ 20 分钟)
 INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interval_ms`, `config`, `tenant_id`) VALUES
 (1, '中国政府采购网', 'ccgp', b'1',
- '[{"path":"/cggg/dfgg/gkzb/","name":"地方-公开招标","type":"tender","pageCount":1},{"path":"/cggg/dfgg/zbgg/","name":"地方-中标公告","type":"win","pageCount":1},{"path":"/cggg/dfgg/gzgg/","name":"地方-更正公告","type":"change","pageCount":1},{"path":"/cggg/dfgg/xjgg/","name":"地方-询价公告","type":"explore","pageCount":1}]',
+ '[{"path":"/cggg/dfgg/gkzb/","name":"地方-公开招标","type":"tender","pageCount":5},{"path":"/cggg/dfgg/zbgg/","name":"地方-中标公告","type":"win","pageCount":5},{"path":"/cggg/dfgg/gzgg/","name":"地方-更正公告","type":"change","pageCount":5},{"path":"/cggg/dfgg/xjgg/","name":"地方-询价公告","type":"explore","pageCount":5}]',
  3000,
  '{"baseUrl":"http://www.ccgp.gov.cn","initialUrl":"http://www.ccgp.gov.cn/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}',
  0);

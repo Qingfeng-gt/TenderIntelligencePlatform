@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
+import com.tenderintelligence.module.crawler.service.NoticeUpsertService;
 import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
-import com.tenderintelligence.module.notice.dal.mysql.NoticePortalMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class CcgpSourceAdapter implements SourceAdapter {
             Pattern.compile("<a href=\"(\\./[^\"?]+\\.htm)\"[^>]*title=\"([^\"]+)\"");
 
     @Resource
-    private NoticePortalMapper noticePortalMapper;
+    private NoticeUpsertService noticeUpsertService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -117,7 +117,7 @@ public class CcgpSourceAdapter implements SourceAdapter {
                 fetched++;
                 try {
                     NoticePortalDO notice = CcgpNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName());
-                    upsert(notice, stats);
+                    noticeUpsertService.upsert(notice, stats);
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     log.warn("[crawler] 解析失败 {}: {}", detailUrl, ex.getMessage());
@@ -126,48 +126,6 @@ public class CcgpSourceAdapter implements SourceAdapter {
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
             log.info("[crawler] 频道 {} 完成: 详情{}条/失败{}条", channel.path, fetched, stats.getDetailFailed());
         }
-    }
-
-    /**
-     * 去重入库: source_url 唯一键; 已存在且关键字段变更则更新
-     */
-    private void upsert(NoticePortalDO notice, CrawlStats stats) {
-        NoticePortalDO existing = noticePortalMapper.selectBySourceUrl(notice.getSourceUrl());
-        if (existing == null) {
-            noticePortalMapper.insert(notice);
-            stats.setNewInsert(stats.getNewInsert() + 1);
-            return;
-        }
-        boolean changed = !equalsSafe(existing.getTitle(), notice.getTitle())
-                || !equalsSafe(existing.getDeadline(), notice.getDeadline())
-                || !equalsSafe(existing.getBudget(), notice.getBudget())
-                || !equalsSafe(existing.getContent(), notice.getContent())
-                || !equalsSafe(existing.getProvince(), notice.getProvince())
-                || !equalsSafe(existing.getCity(), notice.getCity())
-                || !equalsSafe(existing.getIndustry(), notice.getIndustry());
-        if (changed) {
-            existing.setTitle(notice.getTitle());
-            existing.setContent(notice.getContent());
-            existing.setDeadline(notice.getDeadline());
-            existing.setOpenTime(notice.getOpenTime());
-            existing.setBudget(notice.getBudget());
-            existing.setTenderPerson(notice.getTenderPerson());
-            existing.setAgency(notice.getAgency());
-            existing.setContact(notice.getContact());
-            existing.setContactPhone(notice.getContactPhone());
-            existing.setProjectNo(notice.getProjectNo());
-            existing.setPublishTime(notice.getPublishTime());
-            existing.setProvince(notice.getProvince());
-            existing.setCity(notice.getCity());
-            existing.setIndustry(notice.getIndustry());
-            existing.setOpenTime(notice.getOpenTime());
-            noticePortalMapper.updateById(existing);
-            stats.setUpdated(stats.getUpdated() + 1);
-        }
-    }
-
-    private boolean equalsSafe(Object a, Object b) {
-        return a == null ? b == null : a.equals(b);
     }
 
     /** GET 请求, 失败或非 2xx 返回 null */

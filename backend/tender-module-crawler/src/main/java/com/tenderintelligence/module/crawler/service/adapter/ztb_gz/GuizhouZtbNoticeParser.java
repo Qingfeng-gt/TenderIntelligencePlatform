@@ -1,14 +1,21 @@
 package com.tenderintelligence.module.crawler.service.adapter.ztb_gz;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.tenderintelligence.module.crawler.service.AttachmentSupport;
 import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
+import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +30,7 @@ import java.util.regex.Pattern;
  * 结构化字段(预算/截止时间/招标人等)源站无独立字段, 从正文纯文本用通用中文锚点提取;
  * 地区/行业复用 {@link NoticeRegionExtractor} 公共词典
  */
+@Slf4j
 public final class GuizhouZtbNoticeParser {
 
     private GuizhouZtbNoticeParser() {
@@ -98,7 +106,105 @@ public final class GuizhouZtbNoticeParser {
         String detectSource = notice.getTitle() + " " + plain;
         notice.setIndustry(NoticeRegionExtractor.detectIndustry(detectSource));
 
+        // 6) 附件(源站 UploadFile / PdfFile 字段)
+        notice.setAttachments(parseAttachments(detail));
+
         return notice;
+    }
+
+    // ==================== 附件(源站 UploadFile / PdfFile 字段) ====================
+
+    /**
+     * 承载附件的源站字段
+     *
+     * ⚠️ 2026-09-13 复测: search 列表接口仍返回 {@code totalNum = 0}(列表数据未对外开放),
+     * 取不到真实详情报文, 故这两个字段的**实际结构未经实测**, 只能按常见形态容错:
+     * 纯字符串 URL、URL 字符串数组、对象数组(文件名与地址的键名见下)。源站恢复后若日志出现
+     * 「附件字段无法识别」告警, 按告警报文里的真实结构收敛下面的候选键。
+     */
+    private static final String[] ATTACHMENT_FIELDS = {"UploadFile", "PdfFile"};
+    /** 附件对象里可能承载文件名的键 */
+    private static final String[] ATTACHMENT_NAME_KEYS =
+            {"FileName", "Name", "OldFileName", "Title", "fileName", "name", "title"};
+    /** 附件对象里可能承载下载地址的键 */
+    private static final String[] ATTACHMENT_URL_KEYS =
+            {"Url", "FileUrl", "FilePath", "Path", "DownloadUrl", "File", "url", "fileUrl", "filePath", "path"};
+
+    /** 解析详情 JSON 里的附件字段 */
+    private static List<NoticeAttachmentDO> parseAttachments(JsonNode detail) {
+        List<NoticeAttachmentDO> attachments = new ArrayList<>();
+        if (detail == null) {
+            return attachments;
+        }
+        Set<String> seenUrls = new HashSet<>();
+        for (String field : ATTACHMENT_FIELDS) {
+            JsonNode node = detail.get(field);
+            if (node == null || node.isNull()) {
+                continue;
+            }
+            collectAttachments(field, node, attachments, seenUrls);
+        }
+        return attachments;
+    }
+
+    /** 收一个附件字段下的所有条目(字符串 / 数组 / 对象三种形态都吃) */
+    private static void collectAttachments(String field, JsonNode node, List<NoticeAttachmentDO> attachments,
+                                           Set<String> seenUrls) {
+        if (node.isArray()) {
+            for (JsonNode item : node) {
+                collectAttachments(field, item, attachments, seenUrls);
+            }
+            return;
+        }
+        String url;
+        String name = null;
+        if (node.isObject()) {
+            url = firstText(node, ATTACHMENT_URL_KEYS);
+            name = firstText(node, ATTACHMENT_NAME_KEYS);
+        } else {
+            url = node.asText();
+        }
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        url = url.strip();
+        // 与 ccgp 同口径: 扩展名先看文件名, 再看 URL(zcygov 的 downloadFileServlet 链接不带扩展名)
+        String type = AttachmentSupport.typeFromName(name);
+        if (type == null) {
+            type = AttachmentSupport.typeFromUrl(url);
+        }
+        if (type == null) {
+            // 源站字段结构未经实测, 认不出时留下原文, 便于源站恢复后按真实报文收敛解析
+            log.warn("[crawler] ztb_gz {} 字段存在但认不出附件类型, 原文: {}", field, abbreviate(url));
+            return;
+        }
+        if (!seenUrls.add(url)) {
+            return;
+        }
+        NoticeAttachmentDO attachment = new NoticeAttachmentDO();
+        String fileName = name == null || name.isBlank() ? AttachmentSupport.fileNameFromUrl(url) : name.strip();
+        attachment.setFileName(AttachmentSupport.truncate(fileName, AttachmentSupport.MAX_NAME_LENGTH));
+        attachment.setFileUrl(AttachmentSupport.truncate(url, AttachmentSupport.MAX_URL_LENGTH));
+        attachment.setFileType(type);
+        // 源站未标注文件大小(该站结构如此), 留空
+        attachment.setFileSize("");
+        attachment.setSort(attachments.size());
+        attachments.add(attachment);
+    }
+
+    /** 按候选键取第一个非空文本值 */
+    private static String firstText(JsonNode node, String[] keys) {
+        for (String key : keys) {
+            JsonNode value = node.get(key);
+            if (value != null && value.isValueNode() && !value.asText().isBlank()) {
+                return value.asText();
+            }
+        }
+        return null;
+    }
+
+    private static String abbreviate(String value) {
+        return value.length() <= 200 ? value : value.substring(0, 200) + "…";
     }
 
     // ==================== 类型映射(源站 allInfoCategorys) ====================

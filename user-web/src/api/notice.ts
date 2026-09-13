@@ -49,8 +49,17 @@ export function getHomeStat(): Promise<HomeStat> {
   return request({ url: '/notice/stats', method: 'get' })
 }
 
-/** 行业列表(静态,后端提供行业字典后可替换) */
-const industries = ['市政工程', '轨道交通', '建筑工程', '医疗卫生', '通信工程', '农业水利', '生态环保', '新能源', '智慧城市', '软件服务', '能源化工', '咨询服务', '公共安全', '科研设备', '机关团体']
+/**
+ * 行业列表
+ *
+ * 必须与后端 NoticeRegionExtractor.INDUSTRY_KEYWORDS 的分类名逐一对应 —— notice.industry
+ * 由该词典推导, 后端查询是精确相等匹配。此前本列表含「智慧城市/科研设备/机关团体」(仅种子
+ * 数据用过, 推导器从不产出), 却缺「教育/工业设备/交通公路」(推导器会产出), 导致这三类
+ * 实际数据在筛选里选不到。
+ *
+ * TODO: 待后端提供行业字典接口后改为动态获取(字典在代码里, 前端硬编码会再次漂移)。
+ */
+const industries = ['医疗卫生', '市政工程', '软件服务', '轨道交通', '交通公路', '教育', '农业水利', '新能源', '生态环保', '建筑工程', '通信工程', '能源化工', '公共安全', '工业设备', '咨询服务', '其他']
 
 export function getAllIndustries(): string[] {
   return [...industries]

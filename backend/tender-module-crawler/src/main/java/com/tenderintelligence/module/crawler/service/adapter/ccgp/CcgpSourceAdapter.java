@@ -27,11 +27,14 @@ import java.util.regex.Pattern;
 /**
  * 中国政府采购网(www.ccgp.gov.cn)数据源适配器
  *
- * 实现要点(2026-09-08 实测):
+ * 实现要点(2026-09-08 / 2026-09-11 实测):
  * 1. 必须先用浏览器 UA 访问首页拿 Cookie,再访问列表/详情(否则 403/频繁访问限流)
  * 2. 列表页为静态 HTML: <a href="./202609/t20260908_27283358.htm" title="标题">
- * 3. 详情页字段解析见 {@link CcgpNoticeParser}
+ *    两个分组(cggg/dfgg 地方公告、cggg/zygg 中央公告)列表页结构一致, 每页 20 条, 分页 index_N.htm
+ * 3. 详情页有两个模板, 由频道配置的 template 字段选择解析器:
+ *    dfgg → {@link CcgpNoticeParser}(#noticeArea);zygg → {@link CcgpZyggNoticeParser}(表单表格)
  * 4. 详情页请求间隔 ≥ site.intervalMs(默认 3s),防反爬
+ * 5. 源站 CDN 会间歇性返回 200 + 0 字节, fetch() 按失败处理并重试, 详见 {@link #fetch}
  */
 @Slf4j
 @Component
@@ -45,6 +48,9 @@ public class CcgpSourceAdapter implements SourceAdapter {
     /** 列表项链接: <a href="./202609/t20260908_27283358.htm" title="标题"> */
     private static final Pattern LIST_ITEM =
             Pattern.compile("<a href=\"(\\./[^\"?]+\\.htm)\"[^>]*title=\"([^\"]+)\"");
+    /** 详情页模板标识(与 crawler_site.channels[].template 对应) */
+    private static final String TEMPLATE_DFGG = "dfgg";
+    private static final String TEMPLATE_ZYGG = "zygg";
 
     @Resource
     private NoticeUpsertService noticeUpsertService;
@@ -115,12 +121,24 @@ public class CcgpSourceAdapter implements SourceAdapter {
                     continue;
                 }
                 fetched++;
+                // 解析与入库分两段捕获: 两者的排查方向完全不同(字段锚点 vs 表结构/约束),
+                // 合成一条"解析失败"日志会把库层错误(如 Data too long)误报成解析问题。
+                NoticePortalDO notice;
                 try {
-                    NoticePortalDO notice = CcgpNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName());
+                    // 两个分组的详情页模板不同: 地方公告见 CcgpNoticeParser, 中央公告见 CcgpZyggNoticeParser
+                    notice = TEMPLATE_ZYGG.equals(channel.template)
+                            ? CcgpZyggNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName())
+                            : CcgpNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName());
+                } catch (Exception ex) {
+                    stats.setDetailFailed(stats.getDetailFailed() + 1);
+                    log.warn("[crawler] 解析失败 {}: [{}] {}", detailUrl, ex.getClass().getSimpleName(), ex.getMessage());
+                    continue;
+                }
+                try {
                     noticeUpsertService.upsert(notice, stats);
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
-                    log.warn("[crawler] 解析失败 {}: {}", detailUrl, ex.getMessage());
+                    log.warn("[crawler] 入库失败 {}: [{}] {}", detailUrl, ex.getClass().getSimpleName(), ex.getMessage());
                 }
             }
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
@@ -128,25 +146,50 @@ public class CcgpSourceAdapter implements SourceAdapter {
         }
     }
 
-    /** GET 请求, 失败或非 2xx 返回 null */
+    /**
+     * GET 请求, 失败、非 2xx 或响应体为空均返回 null
+     *
+     * 空响应体重试一次: 2026-09-11 实测源站 CDN(openresty, 响应头带 x-via)会间歇性返回
+     * 200 + 0 字节。若只判状态码, 这种情况会被当作抓取成功 —— 列表页记一次 listFetched
+     * 却解析出 0 条, 整页公告被静默丢掉(与"漏标"同类)。故空响应体按失败处理并重试。
+     */
     private String fetch(HttpClient client, String url, String ua, String referer) {
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
+                        .header("User-Agent", ua)
+                        .header("Accept-Language", "zh-CN,zh;q=0.9")
+                        .GET().timeout(Duration.ofSeconds(20));
+                if (referer != null && !referer.isEmpty()) {
+                    builder.header("Referer", referer);
+                }
+                HttpResponse<byte[]> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    // 非 2xx 为确定性失败, 不重试
+                    log.warn("[crawler] HTTP {}: {}", response.statusCode(), url);
+                    return null;
+                }
+                String body = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
+                if (!body.isBlank()) {
+                    return body;
+                }
+                log.warn("[crawler] HTTP 200 但响应体为空(第{}次): {}", attempt, url);
+            } catch (Exception ex) {
+                log.warn("[crawler] 请求失败(第{}次) {}: {}", attempt, url, ex.getMessage());
+            }
+            if (attempt == 1) {
+                sleepQuietly(1000);
+            }
+        }
+        return null;
+    }
+
+    /** 静默休眠(中断时恢复中断标记, 不吞掉) */
+    private void sleepQuietly(long millis) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
-                    .header("User-Agent", ua)
-                    .header("Accept-Language", "zh-CN,zh;q=0.9")
-                    .GET().timeout(Duration.ofSeconds(20));
-            if (referer != null && !referer.isEmpty()) {
-                builder.header("Referer", referer);
-            }
-            HttpResponse<byte[]> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("[crawler] HTTP {}: {}", response.statusCode(), url);
-                return null;
-            }
-            return new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception ex) {
-            log.warn("[crawler] 请求失败 {}: {}", url, ex.getMessage());
-            return null;
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -170,6 +213,7 @@ public class CcgpSourceAdapter implements SourceAdapter {
                 def.path = node.get("path").asText();
                 def.type = node.has("type") ? node.get("type").asText() : "tender";
                 def.pageCount = node.has("pageCount") ? node.get("pageCount").asInt(1) : 1;
+                def.template = node.has("template") ? node.get("template").asText() : TEMPLATE_DFGG;
                 result.add(def);
             }
         } catch (Exception ex) {
@@ -191,5 +235,7 @@ public class CcgpSourceAdapter implements SourceAdapter {
         private String path;
         private String type;
         private int pageCount;
+        /** 详情页模板(dfgg/zygg), 决定用哪个解析器, 见 crawler_site.channels */
+        private String template;
     }
 }

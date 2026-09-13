@@ -1,5 +1,6 @@
 package com.tenderintelligence.module.crawler.service;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +27,20 @@ public final class NoticeRegionExtractor {
             "四川省", "贵州省", "云南省", "西藏自治区",
             "陕西省", "甘肃省", "青海省", "宁夏回族自治区", "新疆维吾尔自治区"
     };
+
+    /**
+     * 自治区全称 → 简称
+     *
+     * 不能只靠 {@code replace("自治区", "")}: 那样会得到「新疆维吾尔」「宁夏回族」「广西壮族」
+     * （民族修饰没去掉），而下方 CITY_PROVINCE 映射出的是「新疆」「广西」「宁夏」，
+     * 同一个省会出现两个值。显式列全，口径统一为简称。
+     */
+    private static final Map<String, String> PROVINCE_SHORT = Map.of(
+            "内蒙古自治区", "内蒙古",
+            "广西壮族自治区", "广西",
+            "西藏自治区", "西藏",
+            "宁夏回族自治区", "宁夏",
+            "新疆维吾尔自治区", "新疆");
 
     /** 城市 → 省份词典 */
     private static final String[][] CITY_PROVINCE = {
@@ -90,7 +105,7 @@ public final class NoticeRegionExtractor {
             int idx = text.indexOf(name);
             if (idx >= 0 && idx < bestIdx) {
                 bestIdx = idx;
-                province = name.replace("自治区", "").replace("省", "").replace("市", "");
+                province = shorten(name);
             }
         }
         // 2) 城市: 词表内城市(整体提取, 避免把普通机构名误判为城市)
@@ -112,6 +127,15 @@ public final class NoticeRegionExtractor {
             province = "其他";
         }
         return new String[]{province.isEmpty() ? "其他" : province, city};
+    }
+
+    /** 省级全称 → 简称(自治区查表, 其余去「省/市/自治区」后缀) */
+    private static String shorten(String provinceFullName) {
+        String mapped = PROVINCE_SHORT.get(provinceFullName);
+        if (mapped != null) {
+            return mapped;
+        }
+        return provinceFullName.replace("自治区", "").replace("省", "").replace("市", "");
     }
 
     /** 关键词词典 → 行业, 兜底"其他" */

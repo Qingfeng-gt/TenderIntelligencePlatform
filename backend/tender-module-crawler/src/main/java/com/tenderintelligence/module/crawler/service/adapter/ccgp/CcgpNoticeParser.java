@@ -3,15 +3,15 @@ package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 中国政府采购网(ccgp)公告详情页解析器
+ * 中国政府采购网 —— 地方公告(dfgg)详情页解析器
+ *
+ * dfgg 是"全国省级公告聚合流"(单页混排各省, 非按省分列), 因此本解析器一套即覆盖全国省级采购公告。
+ * 中央公告(zygg)是另一套表格式模板, 见 {@link CcgpZyggNoticeParser}。
  *
  * 字段锚点均为 2026-09-08 实测:
  * - 标题: <h2 class="tc">…
@@ -26,7 +26,6 @@ public final class CcgpNoticeParser {
 
     // ==================== 正则锚点(实测) ====================
     private static final Pattern TITLE = Pattern.compile("<h2[^>]*class=\"tc\"[^>]*>([^<]+)</h2>");
-    private static final Pattern PROJECT_NO = Pattern.compile("项目编号[：:]\\s*([^<\\s]+)");
     private static final Pattern BUDGET = Pattern.compile("预算金额[：:]\\s*([\\d,]+(?:\\.\\d+)?)\\s*元");
     private static final Pattern PURCHASER = Pattern.compile("noticePurchase-purchaserOrgName[^>]*>\\s*([^<]+)<");
     private static final Pattern PURCHASER_TEL = Pattern.compile("noticePurchase-purchaserLinkTel[^>]*>\\s*([^<]+)<");
@@ -34,9 +33,6 @@ public final class CcgpNoticeParser {
     private static final Pattern CONTACT = Pattern.compile("projectContact-managerName[^>]*>\\s*([^<]+)<");
     private static final Pattern DEADLINE = Pattern.compile("bidFileSubmitTime3[^>]*>\\s*([^<]+)<");
     private static final Pattern RELEASE_DATE = Pattern.compile("name=\"releaseDateSpan\"[^>]*>\\s*([^<]+)<");
-
-    private static final Pattern FULL_DATE_TIME =
-            Pattern.compile("(\\d{4})年(\\d{1,2})月(\\d{1,2})日\\s*(?:(\\d{1,2})时(\\d{1,2})分)?");
 
     // 地区/行业提取: 公共词典见 {@link NoticeRegionExtractor}
     // ==================== 对外入口 ====================
@@ -56,32 +52,35 @@ public final class CcgpNoticeParser {
         notice.setSource(source);
 
         // 1) 正文: #noticeArea 内的公告内容(保留 HTML 供前端渲染)
-        String content = extractContent(html);
+        String content = CcgpHtmlSupport.extractContent(html);
         notice.setContent(content);
 
+        // 1.1) 附件: 附件块位于正文尾部, 故在截出的正文片段上解析(见 CcgpAttachmentParser)
+        notice.setAttachments(CcgpAttachmentParser.parse(content));
+
         // 2) 标题
-        String title = first(TITLE, html);
+        String title = CcgpHtmlSupport.first(TITLE, html);
         if (title == null) {
-            String projectName = first(Pattern.compile("项目名称[：:]\\s*([^<\\n]+)"), content);
+            String projectName = CcgpHtmlSupport.first(Pattern.compile("项目名称[：:]\\s*([^<\\n]+)"), content);
             title = projectName != null ? projectName : "";
         }
-        notice.setTitle(title.trim());
+        notice.setTitle(title.strip());
 
         // 3) 结构化字段(在正文全文上做正则)
-        notice.setProjectNo(clean(first(PROJECT_NO, content)));
-        notice.setBudget(parseBudget(first(BUDGET, content)));
-        notice.setTenderPerson(clean(first(PURCHASER, content)));
-        notice.setAgency(clean(first(AGENCY, content)));
-        notice.setContact(clean(first(CONTACT, content)));
-        notice.setContactPhone(clean(first(PURCHASER_TEL, content)));
+        notice.setProjectNo(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(CcgpHtmlSupport.PROJECT_NO, content)));
+        notice.setBudget(CcgpHtmlSupport.parseBudgetFromYuan(CcgpHtmlSupport.first(BUDGET, content)));
+        notice.setTenderPerson(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(PURCHASER, content)));
+        notice.setAgency(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(AGENCY, content)));
+        notice.setContact(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(CONTACT, content)));
+        notice.setContactPhone(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(PURCHASER_TEL, content)));
 
         // 4) 投标截止/开标时间(CCGP 公开招标: 开标时间=投标截止)
-        LocalDateTime deadline = parseFullDateTime(first(DEADLINE, content));
+        LocalDateTime deadline = CcgpHtmlSupport.parseFullDateTime(CcgpHtmlSupport.first(DEADLINE, content));
         notice.setDeadline(deadline);
         notice.setOpenTime(deadline);
 
         // 5) 发布日期(详情页 releaseDateSpan)
-        LocalDate publishDate = parseDate(first(RELEASE_DATE, html));
+        LocalDate publishDate = CcgpHtmlSupport.parseDate(CcgpHtmlSupport.first(RELEASE_DATE, html));
         notice.setPublishTime(publishDate == null ? LocalDateTime.now() : publishDate.atStartOfDay());
 
         // 6) 地区/行业(规则提取, 公共词典)
@@ -92,93 +91,6 @@ public final class CcgpNoticeParser {
         notice.setIndustry(NoticeRegionExtractor.detectIndustry(detectSource));
 
         return notice;
-    }
-
-    // ==================== 内部实现 ====================
-
-    /** 截取正文: 优先 #noticeArea(新模板); 兜底 vF_deail_maincontent(更正公告旧模板) */
-    private static String extractContent(String html) {
-        if (html == null) {
-            return "";
-        }
-        int start = html.indexOf("id=\"noticeArea\"");
-        String tail;
-        if (start >= 0) {
-            tail = html.substring(start);
-            int styleEnd = tail.indexOf("</style>");
-            if (styleEnd >= 0) {
-                tail = tail.substring(styleEnd + "</style>".length());
-            }
-        } else {
-            // 旧模板(更正/询价等): <div class="vF_deail_maincontent"> → 相关推荐栏前
-            start = html.indexOf("vF_deail_maincontent");
-            if (start < 0) {
-                return "";
-            }
-            // 回退到完整 <div 标签起点, 避免残留类名文本
-            int divStart = html.lastIndexOf("<div", start);
-            if (divStart >= 0 && start - divStart <= 60) {
-                start = divStart;
-            }
-            tail = html.substring(start);
-            int relEnd = tail.indexOf("vF_detail_relcontent");
-            if (relEnd >= 0) {
-                tail = tail.substring(0, relEnd);
-            }
-        }
-        int end = tail.lastIndexOf("</div></div>");
-        if (end < 0) {
-            return tail.trim();
-        }
-        return tail.substring(0, end + "</div></div>".length()).trim();
-    }
-
-    private static String first(Pattern pattern, String text) {
-        if (text == null) {
-            return null;
-        }
-        Matcher matcher = pattern.matcher(text);
-        return matcher.find() ? matcher.group(1) : null;
-    }
-
-    private static String clean(String value) {
-        return value == null ? null : value.trim();
-    }
-
-    /** "296,000.00元" → 29.600000 万元 */
-    private static BigDecimal parseBudget(String amount) {
-        if (amount == null) {
-            return null;
-        }
-        try {
-            return new BigDecimal(amount.replace(",", "")).divide(BigDecimal.valueOf(10000), 2, RoundingMode.HALF_UP);
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
-
-    private static LocalDateTime parseFullDateTime(String value) {
-        LocalDate date = parseDate(value);
-        if (date == null) {
-            return null;
-        }
-        Matcher matcher = FULL_DATE_TIME.matcher(value);
-        if (matcher.find() && matcher.group(4) != null) {
-            return date.atTime(Integer.parseInt(matcher.group(4)), Integer.parseInt(matcher.group(5)));
-        }
-        return date.atStartOfDay();
-    }
-
-    private static LocalDate parseDate(String value) {
-        if (value == null) {
-            return null;
-        }
-        Matcher matcher = FULL_DATE_TIME.matcher(value);
-        if (matcher.find()) {
-            return LocalDate.of(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)),
-                    Integer.parseInt(matcher.group(3)));
-        }
-        return null;
     }
 
 }

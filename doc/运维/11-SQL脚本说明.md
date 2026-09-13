@@ -53,14 +53,15 @@
 
 ### 2.2 `notice.sql` —— 业务全量（必执行，须在 `tender.sql` 之后）
 
-由原先的 `notice.sql` + `demo-crawler-bid.sql` + `demo-crawler-bid-seed.sql` + `demo-crawler-admin.sql` **四个脚本合并而成**，一次执行全部就绪。共 **4 张业务表 + 3 类种子**：
+由原先的 `notice.sql` + `demo-crawler-bid.sql` + `demo-crawler-bid-seed.sql` + `demo-crawler-admin.sql` **四个脚本合并而成**，一次执行全部就绪。共 **5 张业务表 + 3 类种子**：
 
 | 序号 | 表名 | 中文名 | 要点 |
 |---|---|---|---|
 | 1 | `notice` | 招投标公告（标讯） | 核心表。含爬虫扩展字段 `project_no`、`source_url`（**唯一去重键**，`uk_source_url`）、`deadline`、`open_time`、`region_code`；4 个业务索引（`idx_type_publish`、`idx_province`、`idx_industry`、`idx_publish_time`）；`AUTO_INCREMENT=100` |
-| 2 | `crawler_site` | 爬虫站点配置 | `code` 唯一（对应 `SourceAdapter` 实现）、`enabled`、`channels`（频道 JSON）、`interval_ms`（详情页请求间隔，防反爬）、`config`（UA / 首访 URL 等） |
-| 3 | `crawler_task` | 采集任务日志 | 起止时间、状态（`RUNNING`/`SUCCESS`/`FAILED`）、列表与详情抓取数、新增/更新数、失败原因 |
-| 4 | `bid_project` | 用户投标项目 | `user_id`（演示默认 1，正式接会员）、`notice_id` 源公告、拟投标金额、投标文件名、状态机、备注 |
+| 2 | `notice_attachment` | 标讯附件 | `notice` 的子表（一条公告多个附件）。存源站附件直链与元信息（`file_name`/`file_url`/`file_type`/`file_size`/`sort`），**不存文件本体**；无唯一键，写入为「先删后写」整组重写，故源站删掉的附件不残留 |
+| 3 | `crawler_site` | 爬虫站点配置 | `code` 唯一（对应 `SourceAdapter` 实现）、`enabled`、`channels`（频道 JSON）、`interval_ms`（详情页请求间隔，防反爬）、`config`（UA / 首访 URL 等） |
+| 4 | `crawler_task` | 采集任务日志 | 起止时间、状态（`RUNNING`/`SUCCESS`/`FAILED`）、列表与详情抓取数、新增/更新数、失败原因 |
+| 5 | `bid_project` | 用户投标项目 | `user_id`（演示默认 1，正式接会员）、`notice_id` 源公告、拟投标金额、投标文件名、状态机、备注 |
 
 **种子数据三类**：
 

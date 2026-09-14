@@ -4,6 +4,7 @@ import com.tenderintelligence.framework.common.exception.util.ServiceExceptionUt
 import com.tenderintelligence.framework.common.pojo.PageResult;
 import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticePageReqVO;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.dal.mysql.NoticeAttachmentMapper;
 import com.tenderintelligence.module.notice.dal.mysql.NoticePortalMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +24,12 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Resource
     private NoticePortalMapper noticePortalMapper;
+    @Resource
+    private NoticeAttachmentMapper noticeAttachmentMapper;
 
     @Override
     public PageResult<NoticePortalDO> getNoticePage(NoticePageReqVO pageReqVO) {
+        // 列表不查附件: 逐条查会产生 N+1, 而列表页也用不到附件
         return noticePortalMapper.selectPage(pageReqVO);
     }
 
@@ -35,6 +39,7 @@ public class NoticeServiceImpl implements NoticeService {
         if (notice == null) {
             throw ServiceExceptionUtil.exception(NOTICE_NOT_EXISTS);
         }
+        notice.setAttachments(noticeAttachmentMapper.selectListByNoticeId(id));
         return notice;
     }
 

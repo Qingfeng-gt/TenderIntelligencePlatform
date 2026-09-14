@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
+import com.tenderintelligence.module.crawler.service.NoticeUpsertService;
 import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
 import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
-import com.tenderintelligence.module.notice.dal.mysql.NoticePortalMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -50,7 +50,7 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
     private static final String BULLETIN_PATH = "/trade/bulletin/?id=";
 
     @Resource
-    private NoticePortalMapper noticePortalMapper;
+    private NoticeUpsertService noticeUpsertService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -156,10 +156,12 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
                     String id = detail.path("Id").asText("");
                     NoticePortalDO notice = GuizhouZtbNoticeParser.parse(
                             detail, channel.type, baseUrl + BULLETIN_PATH + id, site.getName());
-                    upsert(notice, stats);
+                    noticeUpsertService.upsert(notice, stats);
                 } catch (Exception ex) {
+                    // 同 CcgpSourceAdapter: 这里同时覆盖 JSON 解析与入库两步, 日志带上异常类型便于区分
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
-                    log.warn("[crawler] ztb_gz 解析失败 {}: {}", detailUrl, ex.getMessage());
+                    log.warn("[crawler] ztb_gz 解析或入库失败 {}: [{}] {}",
+                            detailUrl, ex.getClass().getSimpleName(), ex.getMessage());
                 }
             }
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
@@ -168,69 +170,52 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
     }
 
     /**
-     * 去重入库: source_url 唯一键; 已存在且关键字段变更则更新(与 Ccgp 一致)
+     * GET 请求(JSON: 带 Referer + X-Requested-With), 失败、非 2xx 或响应体为空均返回 null
+     *
+     * 空响应体重试一次: 与 {@code CcgpSourceAdapter#fetch} 同因 —— CDN 会间歇性返回
+     * 200 + 0 字节, 只判状态码会把整页列表静默丢掉。
      */
-    private void upsert(NoticePortalDO notice, CrawlStats stats) {
-        NoticePortalDO existing = noticePortalMapper.selectBySourceUrl(notice.getSourceUrl());
-        if (existing == null) {
-            noticePortalMapper.insert(notice);
-            stats.setNewInsert(stats.getNewInsert() + 1);
-            return;
-        }
-        boolean changed = !equalsSafe(existing.getTitle(), notice.getTitle())
-                || !equalsSafe(existing.getDeadline(), notice.getDeadline())
-                || !equalsSafe(existing.getBudget(), notice.getBudget())
-                || !equalsSafe(existing.getContent(), notice.getContent())
-                || !equalsSafe(existing.getProvince(), notice.getProvince())
-                || !equalsSafe(existing.getCity(), notice.getCity())
-                || !equalsSafe(existing.getIndustry(), notice.getIndustry());
-        if (changed) {
-            existing.setTitle(notice.getTitle());
-            existing.setContent(notice.getContent());
-            existing.setDeadline(notice.getDeadline());
-            existing.setOpenTime(notice.getOpenTime());
-            existing.setBudget(notice.getBudget());
-            existing.setTenderPerson(notice.getTenderPerson());
-            existing.setAgency(notice.getAgency());
-            existing.setContact(notice.getContact());
-            existing.setContactPhone(notice.getContactPhone());
-            existing.setProjectNo(notice.getProjectNo());
-            existing.setPublishTime(notice.getPublishTime());
-            existing.setProvince(notice.getProvince());
-            existing.setCity(notice.getCity());
-            existing.setIndustry(notice.getIndustry());
-            noticePortalMapper.updateById(existing);
-            stats.setUpdated(stats.getUpdated() + 1);
-        }
-    }
-
-    private boolean equalsSafe(Object a, Object b) {
-        return a == null ? b == null : a.equals(b);
-    }
-
-    /** GET 请求(JSON: 带 Referer + X-Requested-With), 失败或非 2xx 返回 null */
     private String fetch(HttpClient client, String url, String ua, String referer, boolean xhr) {
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
+                        .header("User-Agent", ua)
+                        .header("Accept", "application/json, text/javascript, */*; q=0.01")
+                        .header("Accept-Language", "zh-CN,zh;q=0.9");
+                if (referer != null && !referer.isEmpty()) {
+                    builder.header("Referer", referer);
+                }
+                if (xhr) {
+                    builder.header("X-Requested-With", "XMLHttpRequest");
+                }
+                HttpResponse<byte[]> response = client.send(builder.GET().timeout(Duration.ofSeconds(20)).build(),
+                        HttpResponse.BodyHandlers.ofByteArray());
+                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    // 非 2xx 为确定性失败, 不重试
+                    log.warn("[crawler] HTTP {}: {}", response.statusCode(), url);
+                    return null;
+                }
+                String body = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
+                if (!body.isBlank()) {
+                    return body;
+                }
+                log.warn("[crawler] HTTP 200 但响应体为空(第{}次): {}", attempt, url);
+            } catch (Exception ex) {
+                log.warn("[crawler] 请求失败(第{}次) {}: {}", attempt, url, ex.getMessage());
+            }
+            if (attempt == 1) {
+                sleepQuietly(1000);
+            }
+        }
+        return null;
+    }
+
+    /** 静默休眠(中断时恢复中断标记, 不吞掉) */
+    private void sleepQuietly(long millis) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
-                    .header("User-Agent", ua)
-                    .header("Accept", "application/json, text/javascript, */*; q=0.01")
-                    .header("Accept-Language", "zh-CN,zh;q=0.9");
-            if (referer != null && !referer.isEmpty()) {
-                builder.header("Referer", referer);
-            }
-            if (xhr) {
-                builder.header("X-Requested-With", "XMLHttpRequest");
-            }
-            HttpResponse<byte[]> response = client.send(builder.GET().timeout(Duration.ofSeconds(20)).build(),
-                    HttpResponse.BodyHandlers.ofByteArray());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("[crawler] HTTP {}: {}", response.statusCode(), url);
-                return null;
-            }
-            return new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception ex) {
-            log.warn("[crawler] 请求失败 {}: {}", url, ex.getMessage());
-            return null;
+            Thread.sleep(millis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
         }
     }
 

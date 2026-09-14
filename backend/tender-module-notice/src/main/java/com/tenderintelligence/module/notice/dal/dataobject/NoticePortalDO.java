@@ -2,6 +2,7 @@ package com.tenderintelligence.module.notice.dal.dataobject;
 
 import com.tenderintelligence.framework.mybatis.core.dataobject.BaseDO;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -10,6 +11,7 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 招投标公告（标讯）DO
@@ -102,4 +104,13 @@ public class NoticePortalDO extends BaseDO {
      * 源站地区代码(如 610000)
      */
     private String regionCode;
+    /**
+     * 附件列表(源站附件直链与元信息)
+     *
+     * 不是 notice 表的字段, 而来自子表 {@link NoticeAttachmentDO}(notice_attachment):
+     * 爬虫在解析详情页时填充, 由 NoticeUpsertService 一并入库; 查询详情时由 Service 回填。
+     * 故需显式声明 exist=false, 否则 MyBatis-Plus 会把它当成 notice 表的列。
+     */
+    @TableField(exist = false)
+    private List<NoticeAttachmentDO> attachments;
 }

@@ -41,8 +41,11 @@ public interface NoticePortalMapper extends BaseMapperX<NoticePortalDO> {
 
     /**
      * 覆盖省份数量(去重,排除空值)
+     *
+     * 排除兜底值「其他」—— 地区推导失败时 province 落「其他」(见 NoticeRegionExtractor),
+     * 它不是省份, 计入会让首页「覆盖省份」多算一个。
      */
-    @Select("SELECT COUNT(DISTINCT province) FROM notice WHERE deleted = 0 AND province IS NOT NULL AND province != ''")
+    @Select("SELECT COUNT(DISTINCT province) FROM notice WHERE deleted = 0 AND province IS NOT NULL AND province != '' AND province != '其他'")
     Long selectProvinceCount();
 
     /**

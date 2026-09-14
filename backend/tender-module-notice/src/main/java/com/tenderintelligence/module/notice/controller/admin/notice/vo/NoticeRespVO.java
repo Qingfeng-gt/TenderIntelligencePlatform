@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "管理后台 - 招投标公告 Response VO")
 @Data
@@ -54,6 +55,12 @@ public class NoticeRespVO {
 
     @Schema(description = "来源网站")
     private String source;
+
+    /**
+     * 附件列表(仅详情接口返回, 列表接口不查附件以免逐条查询)
+     */
+    @Schema(description = "附件列表(源站直链, 平台不存文件本体; 仅详情接口返回)")
+    private List<NoticeAttachmentRespVO> attachments;
 
     @Schema(description = "发布时间")
     private LocalDateTime publishTime;

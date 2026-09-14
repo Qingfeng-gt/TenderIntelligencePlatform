@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Calendar } from '@element-plus/icons-vue'
@@ -13,6 +13,23 @@ const route = useRoute()
 const router = useRouter()
 const notice = ref<Notice | null>(null)
 const loading = ref(false)
+
+/** 附件列表(列表接口不返回附件, 这里只可能来自详情接口) */
+const attachments = computed(() => notice.value?.attachments ?? [])
+
+/**
+ * 正文里的外链(如附件直链)一律新窗口打开
+ *
+ * 正文是源站 HTML 原样渲染的, 里面的 <a> 没有 target。不拦的话点击会在 SPA 内直接跳走,
+ * 用户丢失当前公告且返回不便。
+ */
+function openLinkInNewTab(event: MouseEvent) {
+  const anchor = (event.target as HTMLElement | null)?.closest?.('a')
+  const href = anchor?.getAttribute('href')
+  if (!href || href.startsWith('#')) return
+  event.preventDefault()
+  window.open(href, '_blank', 'noopener,noreferrer')
+}
 
 /** 发起投标弹窗状态 */
 const bidDialogVisible = ref(false)
@@ -103,8 +120,25 @@ onMounted(async () => {
         <div class="cell"><span class="k">联系人</span><span class="v">{{ notice.contact || '—' }}</span></div>
       </div>
 
+      <div v-if="attachments.length" class="attach-box">
+        <h3 class="content-title">
+          附件下载
+          <span class="attach-count">{{ attachments.length }}</span>
+        </h3>
+        <ul class="attach-list">
+          <li v-for="item in attachments" :key="item.fileUrl" class="attach-item">
+            <span class="attach-type">{{ (item.fileType || 'file').toUpperCase() }}</span>
+            <a class="attach-name" :href="item.fileUrl" target="_blank" rel="noopener noreferrer" :title="item.fileName">
+              {{ item.fileName }}
+            </a>
+            <span v-if="item.fileSize" class="attach-size">{{ item.fileSize }}</span>
+          </li>
+        </ul>
+        <p class="attach-tip">附件由源站提供,点击在新窗口打开源站链接下载</p>
+      </div>
+
       <h3 class="content-title">公告详情</h3>
-      <div class="content" v-html="notice.content"></div>
+      <div class="content" v-html="notice.content" @click="openLinkInNewTab"></div>
     </div>
 
     <el-dialog v-model="bidDialogVisible" title="发起投标" width="440px">
@@ -167,6 +201,41 @@ onMounted(async () => {
 .cell .k { color: var(--text-sub); margin-right: 8px; }
 .cell .v { color: var(--text-main); font-weight: 500; }
 .content-title { margin: 26px 0 12px; font-size: 16px; }
+.attach-box { margin-top: 22px; }
+.attach-box .content-title { margin-top: 0; display: flex; align-items: center; gap: 8px; }
+.attach-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-sub);
+  background: var(--bg-soft);
+  border-radius: 9px;
+  padding: 1px 8px;
+}
+.attach-list { list-style: none; padding: 0; margin: 0; }
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border-soft, #ebeef5);
+  font-size: 14px;
+}
+.attach-item:last-child { border-bottom: none; }
+.attach-type {
+  flex: none;
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0065ef;
+  background: rgba(0, 101, 239, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.attach-name { color: #0065ef; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-name:hover { text-decoration: underline; }
+.attach-size { flex: none; margin-left: auto; font-size: 12px; color: var(--text-sub); }
+.attach-tip { margin-top: 10px; font-size: 12px; color: var(--text-sub); }
 .content { font-size: 14.5px; line-height: 2; color: #374151; }
 .content :deep(p) { margin: 8px 0; }
 .content :deep(h3) { font-size: 15px; margin: 14px 0 6px; }

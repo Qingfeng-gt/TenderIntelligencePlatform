@@ -37,6 +37,27 @@ export interface Notice {
   deadline?: number | string
   /** 开标时间(epoch 毫秒或 ISO 字符串) */
   openTime?: number | string
+  /**
+   * 附件列表(源站直链,平台不存文件本体)
+   *
+   * 只有详情接口(/notice/get)返回;列表接口不查附件,故此处可能为 undefined。
+   */
+  attachments?: NoticeAttachment[]
+}
+
+/** 标讯附件 —— 与后端 tender-module-notice 的 NoticeAttachmentRespVO 对齐 */
+export interface NoticeAttachment {
+  id: number
+  /** 附件文件名 */
+  fileName: string
+  /** 源站附件直链(绝对 URL,点开后到源站下载) */
+  fileUrl: string
+  /** 文件类型(pdf/doc/docx/xls/xlsx/zip 等),可能为空 */
+  fileType?: string
+  /** 源站标注的文件大小(源站自由文本,如 546.3K),可能为空 */
+  fileSize?: string
+  /** 同一公告内的展示顺序 */
+  sort?: number
 }
 
 /** 投标项目状态: SUBMITTED已递交 / OTB待开标 / WON中标 / LOST未中标 / ABANDONED放弃 */

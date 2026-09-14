@@ -4,7 +4,6 @@ import com.tenderintelligence.framework.common.pojo.CommonResult;
 import com.tenderintelligence.framework.common.pojo.PageResult;
 import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticePageReqVO;
 import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticeRespVO;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
 import com.tenderintelligence.module.notice.service.NoticeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,6 +50,9 @@ public class NoticePortalController {
     @Operation(summary = "获取公告详情")
     @Parameter(name = "id", description = "公告编号", required = true, example = "1")
     public CommonResult<NoticeRespVO> getNotice(@RequestParam("id") Long id) {
+        // 附件列表(notice.attachments, 非表字段)由 Service 一并填好, toBean 会连嵌套元素一起转成
+        // NoticeAttachmentRespVO(2026-09-13 实测确认; 若哪天换成不转元素的拷贝工具, 序列化会把
+        // NoticeAttachmentDO 的 creator/updateTime 等内部字段吐给门户)
         return success(toBean(noticeService.getNotice(id), NoticeRespVO.class));
     }
 

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch: # 允许在网页上手动触发
+
+permissions:
+  contents: read
+
+concurrency: # 连推多次时取消旧 run
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B -T 1C clean package -DskipTests # -T 1C 可去掉，若并行编译偶发异常
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/tender-server/target/*.jar # 相对仓库根，勿改
+          if-no-files-found: error # 静默空产物直接失败
+
+  frontend:
+    name: Frontend Build (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: admin-web
+            build-script: build:prod # 没有裸 build
+            dist-dir: dist-prod # .env.prod 里 VITE_OUT_DIR=dist-prod
+          - app: user-web
+            build-script: build
+            dist-dir: dist
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12 # 对齐本地 pnpm，pnpm-workspace.yaml 的 allowBuilds 才生效
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24' # 对齐本地；至少需 >= 20.19（admin-web engines）
+          cache: pnpm
+          cache-dependency-path: ${{ matrix.app }}/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: ${{ matrix.app }}
+      - run: pnpm run ${{ matrix.build-script }}
+        working-directory: ${{ matrix.app }}
+      - uses: actions/upload-artifact@v4 # 可选：给后续部署用
+        with:
+          name: ${{ matrix.app }}-dist
+          path: ${{ matrix.app }}/${{ matrix.dist-dir }}

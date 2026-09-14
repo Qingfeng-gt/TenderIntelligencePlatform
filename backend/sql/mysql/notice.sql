@@ -198,12 +198,42 @@ INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interv
  0);
 
 -- 贵州省招标投标公共服务平台(JSON API 源站; channels[].path = search 的 noticeType 类别编码)
--- 2026-09-08 实测: 该站 search 列表接口当前返回 0 条(列表数据下线), GetDetail 可用, 源站恢复后即自动采到数据
+--
+-- ⚠️ 2026-09-14 停用(enabled = b'0'):
+--   该站 search 列表接口自 2026-09-08 实测起返回 totalNum = 0(列表数据下线), 2026-09-13 复测仍未恢复,
+--   适配器一轮下来采不到任何公告 —— ztb_gz 自此不是有效数据源。
+--   源码(适配器/解析器)与测试**全部保留**, 故源站恢复后无需改码, 只需重新启用:
+--     UPDATE crawler_site SET enabled = b'1' WHERE code = 'ztb_gz';
 INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interval_ms`, `config`, `tenant_id`) VALUES
-(2, '贵州省招标投标公共服务平台', 'ztb_gz', b'1',
+(2, '贵州省招标投标公共服务平台', 'ztb_gz', b'0',
  '[{"path":"A01","name":"招标公告","type":"tender","pageCount":1},{"path":"A02","name":"变更公告","type":"change","pageCount":1},{"path":"A04","name":"中标结果公示","type":"win","pageCount":1}]',
  3000,
  '{"baseUrl":"http://ztb.guizhou.gov.cn","initialUrl":"http://ztb.guizhou.gov.cn/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","xhrReferer":"http://ztb.guizhou.gov.cn/trade/?category=affiche"}',
+ 0);
+
+-- 全国公共资源交易平台(channels[].path = 列表接口的 DEAL_CLASSIFY 类别码)
+--
+-- 2026-09-14 实测结论(决定了本配置的频道口径与时间窗):
+--   1) 该站**无需 headless 渲染** —— 此前文档判定「列表页 JS 二次加载」, 实测推翻: 列表是普通表单
+--      POST 的 JSON 接口 /information/pubTradingInfo/getTradList, 正文页 /html/b/… 是服务端直出 HTML。
+--   2) 接口的 total 在 **1000 条封顶**, 且是静默截断。实测各时间窗触顶情况: 「当天」全部类别安全;
+--      「近三天」政府采购即触顶; 「近十天」起 4 个类别触顶。故 config.dealTime 固定 "01"(当天),
+--      靠 2 小时一调度重复覆盖当天来兜底。改用更宽的窗口会静默丢数据, 不要改。
+--   3) 「当天」窗口下各类别产量极不均: 政府采购 927 条, 而工程建设/土地/矿业权/其他当天均为 0 条。
+--      即 927 条里 927 条都是政府采购 —— 按 3 秒/详情页算单这一个频道就要 ~47 分钟/轮。
+--   4) 因此**本配置排除 02 政府采购**: ccgp 已用完整正文覆盖全国政府采购, 而 ggzy 侧其实测正文
+--      可得率仅 2/10(工程建设 7/10、国有产权 0/10), 重复且更差。
+--      若日后仍要开: 往下面 channels 里加一行 {"path":"02","name":"政府采购","type":"tender","pageCount":5}
+--      即可, 无需改代码。
+--
+-- pageCount 为各频道**每轮最大翻页数**(列表每页 20 条), 适配器还会按源站返回的 pages 提前收手,
+-- 故当天产量低的频道不会空翻。合计 16 页 = 最多 320 条候选/轮, 限速 3s ≈ 16 分钟, 落在 2 小时窗口内。
+-- 说明: 与该站正文可得率无关 —— 正文为空的记录会被适配器跳过并计入 detailFailed, 不会入库。
+INSERT INTO `crawler_site` (`id`, `name`, `code`, `enabled`, `channels`, `interval_ms`, `config`, `tenant_id`) VALUES
+(3, '全国公共资源交易平台', 'ggzy', b'1',
+ '[{"path":"01","name":"工程建设","type":"tender","pageCount":3},{"path":"03","name":"土地使用权","type":"tender","pageCount":3},{"path":"04","name":"矿业权","type":"tender","pageCount":1},{"path":"05","name":"国有产权","type":"tender","pageCount":2},{"path":"21","name":"碳排放权","type":"tender","pageCount":1},{"path":"22","name":"排污权","type":"tender","pageCount":1},{"path":"23","name":"药品采购","type":"tender","pageCount":1},{"path":"24","name":"二类疫苗","type":"tender","pageCount":1},{"path":"25","name":"林权","type":"tender","pageCount":1},{"path":"90","name":"其他","type":"tender","pageCount":2}]',
+ 3000,
+ '{"baseUrl":"https://www.ggzy.gov.cn","initialUrl":"https://www.ggzy.gov.cn/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","dealTime":"01"}',
  0);
 
 -- ---------------------------------------------------------------------

@@ -66,9 +66,10 @@
 **种子数据三类**：
 
 1. **`notice`** —— 20 条演示公告（`id` 1-20），四类齐全（tender/win/change/explore），标题与 HTML 正文与前端演示数据对齐，供开发联调；**正式数据由采集写入**。
-2. **`crawler_site`** —— 2 行站点配置：
-   - `ccgp` 中国政府采购网（4 个频道：公开招标 / 中标公告 / 更正公告 / 询价公告）；
-   - `ztb_gz` 贵州省招标投标公共服务平台（JSON API 源站，`channels[].path` 为 `search` 接口的 `noticeType` 类别编码）。该站 2026-09-08 实测 `search` 列表接口**返回 0 条**（列表数据下线），`GetDetail` 仍可用，源站恢复后即自动采到数据。
+2. **`crawler_site`** —— 3 行站点配置（1 行已停用）：
+   - `ccgp` 中国政府采购网（`enabled = b'1'`；~~4 个频道~~ **2026-09-11 起 22 个频道**：`cggg/dfgg` 地方公告 11 个 + `cggg/zygg` 中央公告 11 个）；
+   - `ztb_gz` 贵州省招标投标公共服务平台（**`enabled = b'0'`，2026-09-14 停用**；JSON API 源站，`channels[].path` 为 `search` 接口的 `noticeType` 类别编码）。该站 2026-09-08 实测 `search` 列表接口**返回 0 条**（列表数据下线），一轮采集产不出公告，故停用；`GetDetail` 仍可用，**源码与配置一行未删**，源站恢复后把 `enabled` 改回 `b'1'` 即自动采到数据；
+   - `ggzy` 全国公共资源交易平台（`enabled = b'1'`，2026-09-14 新增；JSON 接口源站，**表单 POST** `/information/pubTradingInfo/getTradList`，`channels[].path` 为 `DEAL_CLASSIFY` 类别码，共 10 个频道：工程建设 / 土地使用权 / 矿业权 / 国有产权 / 碳排放权 / 排污权 / 药品采购 / 二类疫苗 / 林权 / 其他。`config.dealTime = "01"` 固定「当天」窗口；**无需 headless 渲染**，正文为空的记录跳过不入库）。
 3. **后台「数据采集中心」菜单** —— `system_menu` 一行，`id=12800`，path `/crawler`，component `crawler/index`，component_name `CrawlerCenter`，icon `ep:data-analysis`，parent_id 0（顶级菜单）。用 `ON DUPLICATE KEY UPDATE` 幂等写入。**超级管理员自动拥有全部菜单，无需 `system_role_menu` 记录。**
 
 - **依赖**：`tender.sql`（需要其中的 `system_menu` 表）。

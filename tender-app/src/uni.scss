@@ -1,0 +1,40 @@
+/**
+ * uni-app 全局 scss 变量。存在此文件时会被自动注入每个页面的 <style lang="scss">，
+ * 页面里直接用即可，不需要 @import。
+ *
+ * 改这里会影响所有页面，改之前想清楚。
+ */
+
+/* 品牌色 —— 与 user-web 的 --brand 对齐，保证两端观感一致 */
+$uni-color-primary: #2b6de5;
+$uni-color-success: #10b981;
+$uni-color-warning: #f59e0b;
+$uni-color-error: #ef4444;
+
+/* 文字 */
+$uni-text-color: #1f2329;
+$uni-text-color-inverse: #ffffff;
+$uni-text-color-grey: #8a9099;
+$uni-text-color-placeholder: #a8adb5;
+$uni-text-color-disable: #c0c4cc;
+
+/* 背景 */
+$uni-bg-color: #ffffff;
+$uni-bg-color-grey: #f5f6f8;
+$uni-bg-color-hover: #f1f2f4;
+
+/* 边框 */
+$uni-border-color: #e5e7eb;
+
+/* 尺寸 */
+$uni-spacing-row-sm: 10rpx;
+$uni-spacing-row-base: 20rpx;
+$uni-spacing-row-lg: 30rpx;
+$uni-border-radius-sm: 8rpx;
+$uni-border-radius-base: 12rpx;
+$uni-border-radius-lg: 24rpx;
+
+/* 字号 */
+$uni-font-size-sm: 24rpx;
+$uni-font-size-base: 28rpx;
+$uni-font-size-lg: 32rpx;

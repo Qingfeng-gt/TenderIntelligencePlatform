@@ -1,0 +1,9 @@
+# pnpm 10+ 默认拦截依赖的 postinstall 脚本，需要在这里白名单放行。
+# 照 admin-web / user-web 的既有做法。CI 用 --frozen-lockfile，本文件必须一起提交。
+#
+# esbuild 必须放行 —— vite 依赖它下载/链接平台二进制，不放行则构建直接失败。
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: true
+  core-js-pure: true
+  esbuild: true

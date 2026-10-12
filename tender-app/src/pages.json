@@ -1,0 +1,30 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "招投标情报平台" }
+    },
+    {
+      "path": "pages/notice/index",
+      "style": { "navigationBarTitleText": "招标公告" }
+    },
+    {
+      "path": "pages/notice-detail/index",
+      "style": { "navigationBarTitleText": "公告详情" }
+    },
+    {
+      "path": "pages/my-bids/index",
+      "style": { "navigationBarTitleText": "我的投标" }
+    },
+    {
+      "path": "pages/login/index",
+      "style": { "navigationBarTitleText": "登录" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "招投标情报平台",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F6F8"
+  }
+}

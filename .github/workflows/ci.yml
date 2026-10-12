@@ -48,6 +48,9 @@ jobs:
           - app: user-web
             build-script: build
             dist-dir: dist
+          - app: tender-app
+            build-script: build:h5 # UniApp 工程，uni build 默认出 H5
+            dist-dir: dist/build/h5 # uni 的 H5 产物路径，不是裸 dist
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

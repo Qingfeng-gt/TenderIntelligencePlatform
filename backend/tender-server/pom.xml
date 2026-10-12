@@ -148,6 +148,24 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- 毕设新增模块：M1 站点发现 / M4 语义检索 / M5 标签拓扑 -->
+        <!-- 插槽阶段一次性注册齐，避免 5 人各自改本文件造成冲突（doc/毕设 §7 插槽 1） -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-discovery</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-ai</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-tag</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- IM 相关模块。默认注释，保证编译速度 -->
 <!--        <dependency>-->
 <!--            <groupId>com.tenderintelligence</groupId>-->

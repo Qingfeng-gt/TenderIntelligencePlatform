@@ -116,6 +116,26 @@ tender:
     schedule-cron: 0 0 */2 * * ? # 采集 cron(6 位、秒在前), 默认每 2 小时; 勿设为空/OFF(会导致启动报错)
     schedule-enabled: true # 定时采集开关, 关闭请用 false
 
+  # ===== 以下三段是毕设插槽 6 预置的，各模块自己往里填，不要改别人的段（doc/毕设 §7）=====
+  discovery: {} # M1 站点发现。甲的 DiscoveryProperties(prefix = "tender.discovery") 读这里
+  tag: {} # M5 标签体系。戊的 TagProperties(prefix = "tender.tag") 读这里
+
+  # M4 语义检索 —— 由 tender-spring-boot-starter-ai 统一读取，甲/丁/戊 三方共用
+  ai:
+    enabled: true
+    provider: deepseek # OpenAI 兼容提供方；可选 deepseek / qwen / ollama
+    base-url: https://api.deepseek.com/v1 # OpenAI 兼容前缀，要含 /v1；端点路径由客户端拼
+    api-key: ${DEEPSEEK_API_KEY:} # ⚠️ 绝不写死密钥，走环境变量（doc/毕设 §8.6）
+    model: deepseek-chat
+    embedding-model: # 留空则 embed(..) 不可用；DeepSeek 无 embedding，需另配（如 bge-m3 本地服务）
+    embedding-dimensions: 1024
+    timeout: 60s
+    max-retries: 2
+    rate-limit-qps: 5 # 全局限流，避免甲/丁/戊 三处并发打爆配额
+    cache:
+      enabled: true # 响应缓存：实验要能离网重跑、答辩不能现场等 API
+      dir: .ai-cache # 缓存目录，已加进 .gitignore；跑批结果请另外存盘备份
+
   web:
     admin-ui:
       url: http://127.0.0.1:80 # Admin 管理后台 UI 的地址
@@ -127,6 +147,8 @@ tender:
   security:
     permit-all-urls:
       - /admin-api/notice/** # 标讯用户端门户，公告查询无需登录
+      - /app-api/ai-search/** # M4 AI 语义搜索（丁），门户搜索框匿名可用
+      - /app-api/tag/** # M5 标签云/拓扑/推荐（戊），门户标签页匿名可用
   api-encrypt:
     enable: false # 是否开启 API 加密。默认关闭，避免低版本 JDK 8（8u120 以下）启动时 bcprov 的 JCE 认证报错
     algorithm: AES # 加密算法，支持 AES、RSA 等

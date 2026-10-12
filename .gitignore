@@ -11,3 +11,7 @@ target/
 *.log
 logs/
 .DS_Store
+# LLM 响应缓存（tender-spring-boot-starter-ai）。实验要离网重跑就手动备份这个目录，但别提交
+.ai-cache/
+# UniApp 工程（tender-app）—— 打包产物，别提交
+tender-app/unpackage/

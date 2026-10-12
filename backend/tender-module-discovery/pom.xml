@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.tenderintelligence</groupId>
+        <artifactId>tender</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>tender-module-discovery</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        discovery 包下，招投标站点发现（M1，仅工程、不出论文）
+        LLM Agent：输入种子关键词 → 搜索引擎发现候选 → 抓首页 → LLM 判站 → 人工审核 → 写入 crawler_site
+        注意：本模块不依赖 tender-module-crawler 的任何 Java 类，自己定义只做 insert/update 的
+              DiscoveredSiteDO 映射 crawler_site，换取甲、乙零编译期依赖、可独立开工
+    </description>
+
+    <dependencies>
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.tenderintelligence</groupId>
+        <artifactId>tender-framework</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>tender-spring-boot-starter-ai</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        LLM 统一客户端封装拓展。
+
+        毕设的 M1（甲，判站）、M4（丁，查询理解/Embedding/Rerank）、M5（戊，行业打标）三方都要调 LLM。
+        各写一套 HTTP 客户端 = 三份 key 管理、三份重试、三份限流，所以在这里统一：
+
+        - 统一配置：provider / model / base-url / api-key，走 @ConfigurationProperties("tender.ai")
+        - 统一重试：仅对 IO 失败与 429/5xx 重试，指数退避
+        - 统一限流：全局限 QPS，避免三方并发打爆配额
+        - 统一响应缓存：**这是硬需求** —— 实验要能离网重跑、答辩不能现场等 API
+
+        只暴露 chat(..) 与 embed(..) 两个能力，刻意不引 Spring AI / LangChain4j：
+        tandem-dependencies 禁止会波及全平台的传递依赖升级，而自研才好插缓存层。
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <!-- HTTP 客户端。okhttp 已在 tender-dependencies 中统一版本，勿另引 -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+        </dependency>
+
+        <!--
+            下面两个在 tender-common 里是 provided scope（"只有工具类需要使用到"），不传递，
+            所以本模块必须自己声明。版本仍由 tender-dependencies / spring-boot-dependencies 管。
+        -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

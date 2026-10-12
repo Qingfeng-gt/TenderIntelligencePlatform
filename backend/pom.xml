@@ -29,6 +29,9 @@
         <module>tender-module-notice</module>
         <module>tender-module-crawler</module>
         <module>tender-module-bid</module>
+        <module>tender-module-discovery</module>
+        <module>tender-module-ai</module>
+        <module>tender-module-tag</module>
 <!--        <module>tender-module-im</module>-->
     </modules>
 

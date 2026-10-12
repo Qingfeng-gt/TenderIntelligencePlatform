@@ -317,6 +317,13 @@
                 <artifactId>tender-spring-boot-starter-mq</artifactId>
                 <version>${revision}</version>
             </dependency>
+
+            <!-- AI 相关：LLM 统一客户端（甲 M1 / 丁 M4 / 戊 M5 共用） -->
+            <dependency>
+                <groupId>com.tenderintelligence</groupId>
+                <artifactId>tender-spring-boot-starter-ai</artifactId>
+                <version>${revision}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-spring-boot-starter</artifactId>

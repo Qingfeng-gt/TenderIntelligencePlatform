@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.tenderintelligence</groupId>
+        <artifactId>tender</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>tender-module-tag</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        tag 包下，标签拓扑查询系统（M5）
+        四层标签本体（行业/地区/金额/采购方式）→ 规则 + LLM 双路打标 → 共现矩阵与 Louvain 社区发现 → 标签推理推荐
+        读公告一律走 tender-module-notice 暴露的 NoticeApi，不直接连 notice 表
+        注意：本模块的 tag 表是「唯一权威标签源」；notice.industry 是 crawler 的规则抽取结果，
+              仅作为 RuleTaggingService 的输入之一（口径见 doc/毕设 §6 第 8 项）
+    </description>
+
+    <dependencies>
+        <!-- 业务模块：读公告走 NoticeApi（契约见 doc/毕设 §5） -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-module-notice</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- LLM 统一客户端（配置、重试、限流、响应缓存） -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-ai</artifactId>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>com.tenderintelligence</groupId>
+            <artifactId>tender-spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

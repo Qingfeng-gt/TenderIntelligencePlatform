@@ -122,6 +122,11 @@ const timeOptions = [
         <el-button type="primary" @click="search">搜索</el-button>
         <el-button :icon="Refresh" @click="reset">重置</el-button>
       </div>
+      <!-- ══ 挂载点 A：AI 搜索入口（丁 · M4）══ 由毕设插槽 4 预留 ══
+           第 5 周由丙在此接入丁的 AI 搜索入口（跳 /ai-search，或内联一个 AI 输入框）。
+           丁**不能改本文件**（user-web 既有文件全归丙）—— 由丙留点、丙接线。
+           契约见 doc/毕设 §5「NoticeListPage.vue 挂载点」。
+      ══════════════════════════════════════════════════════════════ -->
     </div>
 
     <!-- 筛选行 -->
@@ -139,6 +144,11 @@ const timeOptions = [
         <el-select v-model="query.timeRange" size="default" style="width: 160px" @change="search">
           <el-option v-for="t in timeOptions" :key="t.key" :label="t.label" :value="t.key" />
         </el-select>
+        <!-- ══ 挂载点 B：标签 chip（戊 · M5）══ 由毕设插槽 4 预留 ══
+             第 5 周由丙在此接入戊的标签 chip（数据来自 /app-api/tag/cloud）。
+             选中后把 tagIds 传给 /notice/list（参数已列进 doc/毕设 §5 契约表）。
+             戊**不能改本文件** —— 由丙留点、丙接线。
+        ═══════════════════════════════════════════════════════════ -->
       </div>
     </div>
 

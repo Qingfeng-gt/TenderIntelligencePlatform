@@ -248,4 +248,35 @@ ON DUPLICATE KEY UPDATE
   `component` = VALUES(`component`),
   `component_name` = VALUES(`component_name`);
 
+-- ---------------------------------------------------------------------
+-- 8) 毕设插槽 3：admin 菜单预置（见 doc/毕设 §7）
+--
+-- 一次性把 5 个人的菜单全插进来，component 先指向**占位页**。
+-- 各人后续只需替换占位页的内容，**不要改本文件、不要自己插菜单**（否则 id 撞车 + 重复菜单）。
+--
+-- 号段分配（doc/毕设 §4.3）：
+--   12810~12819 甲 → /discovery/*        （M1 站点发现）
+--   12820~12829 乙 → /crawler/log        （M2 抓取日志与字段核对）
+--   12830~12839 丁 → /ai-search/eval     （M4 检索效果评测）
+--   12840~12849 戊 → /tag/manage         （M5 标签管理与自动打标）
+--   12850~12859 丙 → /notice/manage      （M3 公告管理）
+--
+-- 注意：component 是相对 admin-web/src/views/ 的路径，靠 import.meta.glob 匹配。
+--       写错的表现是「菜单点开是空白页」——不报错，极难排查。
+--       component_name（路由 name）必须全局唯一。
+-- ---------------------------------------------------------------------
+INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES
+(12810, '智能站点发现', '', 2, 41, 0, '/discovery/agent', 'ep:search', 'discovery/agent/index', 'DiscoveryAgent', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(12811, '候选站点审核', '', 2, 42, 0, '/discovery/candidates', 'ep:list', 'discovery/candidates/index', 'DiscoveryCandidates', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(12820, '抓取日志与字段核对', '', 2, 43, 0, '/crawler/log', 'ep:document', 'crawler/log/index', 'CrawlerLog', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(12830, '检索效果评测', '', 2, 44, 0, '/ai-search/eval', 'ep:trend-charts', 'ai-search/eval/index', 'AiSearchEval', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(12840, '标签管理与打标', '', 2, 45, 0, '/tag/manage', 'ep:collection-tag', 'tag/manage/index', 'TagManage', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(12850, '公告管理', '', 2, 46, 0, '/notice/manage', 'ep:bell', 'notice/manage/index', 'NoticeManage', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0')
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `parent_id` = VALUES(`parent_id`),
+  `path` = VALUES(`path`),
+  `component` = VALUES(`component`),
+  `component_name` = VALUES(`component_name`);
+
 SET FOREIGN_KEY_CHECKS = 1;

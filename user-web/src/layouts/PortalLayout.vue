@@ -9,13 +9,18 @@ import type { MemberProfile } from '@/types'
 const router = useRouter()
 const profile = ref<MemberProfile | null>(null)
 
+// 毕设插槽 4 预置（见 doc/毕设 §7）：后三项由丁/戊/丙 使用，占位页与路由已建好。
+// 本文件是公共区，**各人不要改** —— 需要调整导航顺序/样式时找队长。
 const nav = [
   { label: '首页', to: '/' },
   { label: '招标公告', to: '/notice?type=tender' },
   { label: '中标公告', to: '/notice?type=win' },
   { label: '变更公告', to: '/notice?type=change' },
   { label: '采购公告', to: '/notice?type=explore' },
-  { label: '我的投标', to: '/my-bids' }
+  { label: 'AI 搜索', to: '/ai-search' },
+  { label: '标签探索', to: '/tag/explore' },
+  { label: '我的投标', to: '/my-bids' },
+  { label: '我的收藏', to: '/favorite' }
 ]
 
 onMounted(async () => {

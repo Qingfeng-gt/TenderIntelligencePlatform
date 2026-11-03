@@ -32,6 +32,8 @@ public class NoticeUpsertService {
     private NoticePortalMapper noticePortalMapper;
     @Resource
     private NoticeAttachmentMapper noticeAttachmentMapper;
+    @Resource
+    private NoticeModelSyncService noticeModelSyncService;
 
     /**
      * 按 sourceUrl 去重入库
@@ -44,6 +46,8 @@ public class NoticeUpsertService {
         if (existing == null) {
             noticePortalMapper.insert(notice);
             saveAttachments(notice.getId(), notice.getAttachments());
+            // P0 兼容写入层：旧列照写，同时补齐 project/tender_project/tender_lot/enterprise 与新列
+            noticeModelSyncService.sync(notice);
             stats.setNewInsert(stats.getNewInsert() + 1);
             return;
         }
@@ -51,8 +55,11 @@ public class NoticeUpsertService {
             return;
         }
         applyChanges(existing, notice);
+        existing.setAttachments(notice.getAttachments());
         noticePortalMapper.updateById(existing);
         saveAttachments(existing.getId(), notice.getAttachments());
+        // P0 兼容写入层：更新后同样补齐新模型
+        noticeModelSyncService.sync(existing);
         stats.setUpdated(stats.getUpdated() + 1);
     }
 

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -45,4 +46,14 @@ public class CrawlerTaskDO extends BaseDO {
     private Integer updated;
     /** 失败原因 */
     private String errorMsg;
+    /** 触发方式: MANUAL/SCHEDULE/RETRY */
+    private String triggerType;
+    /** 总耗时(ms) */
+    private Long durationMs;
+    /** 本轮站点/频道配置快照(JSON) */
+    private String configSnapshot;
+    /** 异常分类 */
+    private String errorType;
+    /** 数据日期 */
+    private LocalDate dataDate;
 }

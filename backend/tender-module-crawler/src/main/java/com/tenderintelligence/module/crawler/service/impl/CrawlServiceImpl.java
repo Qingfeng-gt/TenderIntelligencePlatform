@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -89,6 +90,8 @@ public class CrawlServiceImpl implements CrawlService {
         task.setSiteCode(siteCode);
         task.setStartTime(LocalDateTime.now());
         task.setStatus(CrawlerTaskStatusEnum.RUNNING.getStatus());
+        task.setTriggerType("SCHEDULE");
+        task.setDataDate(LocalDate.now());
         crawlTaskMapper.insert(task);
         return task;
     }
@@ -103,6 +106,8 @@ public class CrawlServiceImpl implements CrawlService {
             return;
         }
         log.info("[crawler] 开始采集站点[{}] 任务#{}", site.getName(), task.getId());
+        task.setConfigSnapshot(site.getConfig());
+        task.setErrorType("");
         CrawlStats stats = new CrawlStats();
         try {
             adapter.crawl(site, stats);
@@ -110,11 +115,14 @@ public class CrawlServiceImpl implements CrawlService {
             task.setErrorMsg("");
         } catch (Exception ex) {
             task.setStatus(CrawlerTaskStatusEnum.FAILED.getStatus());
+            task.setErrorType(ex.getClass().getSimpleName());
             task.setErrorMsg(ex.getMessage() == null ? ex.getClass().getSimpleName()
                     : ex.getMessage().substring(0, Math.min(500, ex.getMessage().length())));
             log.error("[crawler] 采集站点[{}] 失败: {}", site.getName(), task.getErrorMsg(), ex);
         }
         task.setEndTime(LocalDateTime.now());
+        task.setDurationMs(task.getStartTime() == null ? 0L
+                : Duration.between(task.getStartTime(), task.getEndTime()).toMillis());
         task.setListFetched(stats.getListFetched());
         task.setListParsed(stats.getListParsed());
         task.setDetailFetched(stats.getDetailFetched());

@@ -17,6 +17,8 @@
 | `notice.sql` | 业务全量：标讯 / 采集 / 投标 + 菜单与站点种子 | 4 | ② 必执行（依赖 ①） |
 | `quartz.sql` | Quartz 定时任务 `QRTZ_*` 表 | 11 | ③ 仅启用 Quartz 的环境 |
 
+> 另有 `refactor/` 目录用于**已存在库的增量重构**（P0 数据地基），不参与上述全新初始化顺序，见 §六。
+
 ---
 
 ## 二、各文件详解
@@ -125,13 +127,80 @@ mysql -uroot -p tender < backend/sql/mysql/quartz.sql
 
 | 场景 | 做法 |
 |---|---|
-| 新增业务表 | 直接改 `notice.sql`（业务表都在这），补上 DDL 与必要种子；**不要新建增量脚本** |
-| 修改已有表结构 | 改 `notice.sql` 中的建表语句；开发期直接重建库，不写 `ALTER` |
-| 生产环境变更 | ⚠️ 当前脚本体系**不支持增量迁移**，生产变更需要另行编写 `ALTER` 脚本并单独管理 |
+| 新库 / 整体重置 | 继续用 `tender.sql` → `notice.sql` 全量初始化，**不要**把重构增量脚本混进初始化顺序 |
+| 已存在库的结构演进 | 在 `refactor/` 下按批次新增 `P0-x__*.sql`，每批附带 `*_rollback.sql`；先备份、先在测试库执行 |
+| 修改已有表结构 | 重构期用增量脚本；全量脚本中的表结构在 P0 稳定后再同步折叠 |
+| 生产环境变更 | ⚠️ 必须备份 + 回滚脚本 + 先在测试库验证；不要在业务高峰期执行大表 `ALTER` |
 | 新增管理端页面 | 需向 `system_menu` 插一行（可写进 `notice.sql` 的种子段，用 `ON DUPLICATE KEY UPDATE` 保持幂等） |
 | 新增采集站点 | 向 `crawler_site` 插一行（`code` 对应新的 `SourceAdapter` 实现），详见 [`06-数据采集设计.md`](../技术/06-数据采集设计.md) |
 
 > 注意：`backend/README.md` 中的旧版「数据库」章节（含 7 步清单）已过时，**以本文档为准**。
+
+---
+
+## 六、重构期增量脚本（`refactor/`）
+
+> 目标：按 [`13-数据模型-目标设计.md`](../数据/13-数据模型-目标设计.md) 在不重建现有库的前提下落地 P0 数据地基。
+> 详细说明见 [`backend/sql/mysql/refactor/README.md`](../../backend/sql/mysql/refactor/README.md)。
+
+| 文件 | 作用 | 前置 |
+|---|---|---|
+| `P0__run_all.sh` | **一键执行**：备份 → P0-1 → P0-2 → P0-3 → P0-4 → 校验 | — |
+| `P0-1__base_data.sql` | `base_area`、`base_code`、`base_field_mapping` + 省级/演示城市/编码种子 | 无 |
+| `P0-2__enterprise.sql` | `enterprise`、`enterprise_role`、`enterprise_contact`、`enterprise_alias` | P0-1 |
+| `P0-2__enterprise_backfill.sql` | 从 `notice.tender_person` / `agency` 回填企业主档与角色 | P0-2 建表 |
+| `P0-2__enterprise_validate.sql` | 企业回填只读校验 | P0-2 回填 |
+| `P0-3__tender_model.sql` | `project`、`tender_project`、`tender_lot`、`notice_change`、`notice_enterprise`；扩展 `notice` / `notice_attachment` | P0-1/P0-2 |
+| `P0-3__notice_backfill.sql` | 旧 `notice` → 四层模型；回填 `notice_enterprise` | P0-3 建表、P0-2 回填 |
+| `P0-3__notice_validate.sql` | 四层归并只读校验 | P0-3 回填 |
+| `P0-4__crawl_governance.sql` | `crawler_channel`、`crawler_fetch_log`、`crawl_raw`、`crawl_parse_rule`、`crawl_merge_log`、`notice_quality`；扩展 `crawler_site` / `crawler_task` | 现有采集表 |
+| `P0-4__crawler_channel_backfill.sql` | `crawler_site.channels` JSON → `crawler_channel` | P0-4 建表 |
+| `P0-4__crawl_validate.sql` | 频道/日志表只读校验 | P0-4 回填 |
+| `P0-5__compat_check.sql` | 旧列/新列/新表对账 | P0-3/P0-4 |
+| `P0-5__compat_runbook.md` | 兼容期运行手册、切换/回滚步骤 | — |
+| `*_cleanup.sql` | 只撤回填数据，保留表结构 | 对应批次 |
+| `*_rollback.sql` | 删除对应批次新增表（默认保留新列） | — |
+
+**一键执行**：
+
+```bash
+cd backend/sql/mysql/refactor
+./P0__run_all.sh --dry-run              # 只打印，不连库
+DB_PASS='你的密码' ./P0__run_all.sh --yes # 备份后正式执行
+```
+
+**手动执行顺序**：
+
+```bash
+mysqldump -uroot -p tender > tender_before_p0_$(date +%Y%m%d_%H%M).sql
+mysql -uroot -p tender < P0-1__base_data.sql
+mysql -uroot -p tender < P0-2__enterprise.sql
+mysql -uroot -p tender < P0-2__enterprise_backfill.sql
+mysql -uroot -p tender < P0-3__tender_model.sql
+mysql -uroot -p tender < P0-3__notice_backfill.sql
+mysql -uroot -p tender < P0-4__crawl_governance.sql
+mysql -uroot -p tender < P0-4__crawler_channel_backfill.sql
+mysql -uroot -p tender < P0-5__compat_check.sql
+```
+
+**执行原则**：
+
+1. 先 `mysqldump` 备份；先在测试库执行。
+2. 前向脚本只用 `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN` / `INSERT ... ON DUPLICATE KEY UPDATE`，不 `DROP`、不 `TRUNCATE`、不 `DELETE`。
+3. P0 阶段**不删除、不改名、不修改旧列类型**；对 `notice` / `notice_attachment` / `crawler_site` / `crawler_task` 只做新增列。
+4. 扩展用“哨兵列”判断，回填按唯一键/`NOT EXISTS`，均可重复执行。
+5. 新表先存在，业务仍读旧表；P0-5 兼容层与前端逐页切换后再改读路径。
+6. P0 稳定后，把最终结构折叠回 `tender.sql` / `notice.sql`，`refactor/` 保留作迁移历史。
+
+**本批已知边界**：
+
+- `base_area` 只保证省级 34 个 + 17 个演示城市；全量地市/区县需导入 GB/T 2260 数据文件。
+- `base_code` 的代码值有占位项，最终需按 V2.0 附录核对。
+- 项目归并按 `SHA256(项目编号或标题 | region_code | 项目编号)` 生成 `project_key`；跨源站精确归并与人工合并需后续接 `crawl_merge_log`。
+- 旧数据无标段信息，统一生成 `lot_no='DEFAULT'` 的默认标段。
+- 企业回填只抽 `tender_person` / `agency` 名称，不解析联系人、不补信用代码。
+- 采集代码未改；过渡期每次采集后重跑 `P0-3__notice_backfill.sql`，详见 `P0-5__compat_runbook.md`。
+- `notice` 的 ngram 全文索引未包含在本批脚本中，需要时单独加。
 
 ---
 

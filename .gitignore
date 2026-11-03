@@ -15,3 +15,5 @@ logs/
 .ai-cache/
 # UniApp 工程（tender-app）—— 打包产物，别提交
 tender-app/unpackage/
+# P0 迁移脚本的本地数据库备份，别提交
+backend/sql/mysql/refactor/backup/

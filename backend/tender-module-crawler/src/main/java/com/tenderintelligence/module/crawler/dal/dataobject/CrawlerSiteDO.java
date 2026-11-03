@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
+
 /**
  * 爬虫站点配置
  *
@@ -37,4 +39,20 @@ public class CrawlerSiteDO extends BaseDO {
     private Long intervalMs;
     /** 抓取配置JSON(UA/首访URL等) */
     private String config;
+    /** 站点层级: official/industry/agency */
+    private String tier;
+    /** 站点级调度表达式 */
+    private String scheduleCron;
+    /** 优先级，越小越优先 */
+    private Integer priority;
+    /** 覆盖区域代码 JSON */
+    private String regionScope;
+    /** 最近成功时间 */
+    private LocalDateTime lastSuccessTime;
+    /** 最近失败时间 */
+    private LocalDateTime lastFailTime;
+    /** 健康状态: UNKNOWN/HEALTHY/DEGRADED/DOWN */
+    private String healthStatus;
+    /** 适配器版本 */
+    private String adapterVersion;
 }

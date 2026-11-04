@@ -3,8 +3,8 @@
     <view class="placeholder">
       <text class="p-title">公告列表 —— 待甲实现</text>
       <text class="p-line">列表 + 筛选。这是 M6 性能基准的**主测页面**（长列表重）。</text>
-      <text class="p-line">接口：GET /admin-api/notice/list（已放行免登录，后端零改造）</text>
-      <text class="p-line">参数：pageNo / pageSize / keyword / type / province / industry / publishTimeGreaterThan</text>
+      <text class="p-line">接口：GET /admin-api/notice/page（已放行免登录）</text>
+      <text class="p-line">参数：pageNo / pageSize / keyword / noticeTypeCode / provinceCode / industry / publishTimeGreaterThan</text>
     </view>
   </view>
 </template>

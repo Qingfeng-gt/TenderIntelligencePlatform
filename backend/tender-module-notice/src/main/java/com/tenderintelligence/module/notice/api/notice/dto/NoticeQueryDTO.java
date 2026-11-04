@@ -32,6 +32,15 @@ public class NoticeQueryDTO extends PageParam {
      */
     private String province;
 
+    /** 省级代码（新模型；优先于 province） */
+    private String provinceCode;
+
+    /** 市级代码（新模型） */
+    private String cityCode;
+
+    /** 预算下限（万元） */
+    private BigDecimal budgetMin;
+
     /**
      * 行业分类
      *

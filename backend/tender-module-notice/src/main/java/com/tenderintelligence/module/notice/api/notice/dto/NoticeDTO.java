@@ -106,6 +106,141 @@ public class NoticeDTO {
      */
     private LocalDateTime openTime;
 
+    // ==================== P0 国标字段（解析器可逐步填充，未填由入库服务兜底） ====================
+
+    /**
+     * 统一交易标识码
+     */
+    private String unifiedDealCode;
+    /**
+     * 招标项目编号
+     */
+    private String tenderProjectNo;
+    /**
+     * 标段（包）编号
+     */
+    private String lotNo;
+    /**
+     * 公告标识/编号
+     */
+    private String noticeNo;
+    /**
+     * 公告子类型代码
+     */
+    private String noticeSubtypeCode;
+    /**
+     * 源站 code
+     */
+    private String sourceSiteCode;
+    /**
+     * 来源平台名称
+     */
+    private String sourcePlatform;
+    /**
+     * 文件获取开始时间
+     */
+    private LocalDateTime fileGetStartTime;
+    /**
+     * 文件获取截止时间
+     */
+    private LocalDateTime fileGetEndTime;
+    /**
+     * 答疑/澄清截止时间
+     */
+    private LocalDateTime qaDeadline;
+    /**
+     * 报名截止时间
+     */
+    private LocalDateTime signDeadline;
+    /**
+     * 投标截止时间（国标列；为空时入库服务回落到 deadline）
+     */
+    private LocalDateTime bidDeadline;
+    /**
+     * 开标地点
+     */
+    private String openPlace;
+    /**
+     * 公示开始时间
+     */
+    private LocalDateTime publicityStartTime;
+    /**
+     * 公示结束时间
+     */
+    private LocalDateTime publicityEndTime;
+    /**
+     * 最高限价（万元）
+     */
+    private BigDecimal priceCeiling;
+    /**
+     * 保证金（万元）
+     */
+    private BigDecimal depositAmount;
+    /**
+     * 文件售价（万元）
+     */
+    private BigDecimal filePrice;
+    /**
+     * 中标金额（万元）
+     */
+    private BigDecimal winAmount;
+    /**
+     * 采购方式代码
+     */
+    private String procurementMethodCode;
+    /**
+     * 资金来源代码
+     */
+    private String fundingSourceCode;
+    /**
+     * 评标办法代码
+     */
+    private String evaluationMethodCode;
+    /**
+     * 资格要求
+     */
+    private String qualificationRequirement;
+    /**
+     * 特定资格
+     */
+    private String specificQualification;
+    /**
+     * 是否接受联合体；null 表示未知
+     */
+    private Boolean consortiumAllowed;
+    /**
+     * 业绩要求
+     */
+    private String performanceRequirement;
+    /**
+     * 资质等级代码
+     */
+    private String qualificationLevelCode;
+    /**
+     * 交易分类代码
+     */
+    private String tradeCategoryCode;
+    /**
+     * 省级代码
+     */
+    private String provinceCode;
+    /**
+     * 市级代码
+     */
+    private String cityCode;
+    /**
+     * 区县代码
+     */
+    private String districtCode;
+    /**
+     * 行业代码
+     */
+    private String industryCode;
+    /**
+     * 解析器版本
+     */
+    private String parserVersion;
+
     /**
      * 附件列表。入库时<b>整组重写</b>（先删后写），传 null 或空列表表示该公告没有附件
      */

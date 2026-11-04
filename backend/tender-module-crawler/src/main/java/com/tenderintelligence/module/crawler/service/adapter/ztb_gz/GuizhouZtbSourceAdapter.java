@@ -2,11 +2,15 @@ package com.tenderintelligence.module.crawler.service.adapter.ztb_gz;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerChannelDO;
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
+import com.tenderintelligence.module.crawler.dal.mysql.CrawlerChannelMapper;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
-import com.tenderintelligence.module.crawler.service.NoticeUpsertService;
+import com.tenderintelligence.module.crawler.service.CrawlTelemetryService;
 import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.NoticeApi;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeUpsertRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +21,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -50,7 +53,11 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
     private static final String BULLETIN_PATH = "/trade/bulletin/?id=";
 
     @Resource
-    private NoticeUpsertService noticeUpsertService;
+    private NoticeApi noticeApi;
+    @Resource
+    private CrawlerChannelMapper crawlerChannelMapper;
+    @Resource
+    private CrawlTelemetryService crawlTelemetryService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -83,22 +90,34 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
             log.warn("[crawler] ztb_gz 首页预热失败(不影响详情接口): {}", initialUrl);
         }
 
-        // 3) 频道循环(JSON: [{path: noticeType查询值, name, type, pageCount}])
-        List<ChannelDef> channels = parseChannels(site.getChannels());
-        for (ChannelDef channel : channels) {
+        // 3) 频道循环（crawler_channel.path = noticeType 查询值）
+        List<CrawlerChannelDO> channels = crawlerChannelMapper.selectEnabledBySiteCode(site.getCode());
+        if (channels.isEmpty()) {
+            throw new IllegalStateException("ztb_gz 未配置任何启用频道(crawler_channel)");
+        }
+        for (CrawlerChannelDO channel : channels) {
             // 列表 → 收集详情 URL(先全部列表页, 再统一抓详情, 与 Ccgp 流程一致)
             Set<String> detailUrls = new LinkedHashSet<>();
             boolean listEmpty = false;
-            for (int page = 1; page <= channel.pageCount; page++) {
+            int pageCount = channel.getPageCount() == null ? 1 : Math.max(1, channel.getPageCount());
+            for (int page = 1; page <= pageCount; page++) {
                 String listUrl = baseUrl + SEARCH_PATH
                         + "?pubDate=all&pubType=all&region=all&industry=all&prjType=all"
-                        + "&noticeType=" + channel.noticeType + "&noticeClassify=all"
+                        + "&noticeType=" + channel.getPath() + "&noticeClassify=all"
                         + "&pageIndex=" + page + "&args=";
+                long start = System.currentTimeMillis();
                 String listJson = fetch(client, listUrl, ua, xhrReferer, true);
+                long cost = System.currentTimeMillis() - start;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channel.getPath(), "LIST",
+                        listUrl, listJson == null ? null : 200, cost, 0,
+                        listJson == null ? "FAILED" : "SUCCESS",
+                        listJson == null ? "FETCH_FAILED" : "", "");
                 stats.setListFetched(stats.getListFetched() + 1);
                 if (listJson == null) {
                     continue;
                 }
+                crawlTelemetryService.recordRaw(stats.getTaskId(), site.getCode(), listUrl, "LIST",
+                        listJson, "CRAWL-V2", "PARSED");
                 int parsed = 0;
                 try {
                     JsonNode root = objectMapper.readTree(listJson);
@@ -122,14 +141,14 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
                     log.warn("[crawler] ztb_gz 列表解析失败 {}: {}", listUrl, ex.getMessage());
                 }
                 stats.setListParsed(stats.getListParsed() + parsed);
-                log.info("[crawler] ztb_gz 频道 {} 第{}页: 解析出 {} 条", channel.name, page, parsed);
-                if (page < channel.pageCount) {
+                log.info("[crawler] ztb_gz 频道 {} 第{}页: 解析出 {} 条", channel.getName(), page, parsed);
+                if (page < pageCount) {
                     Thread.sleep(intervalMs);
                 }
             }
             if (listEmpty) {
                 log.info("[crawler] ztb_gz 频道 {}: 源站 search 返回 0 条(该站列表数据可能未对外开放/已下线)",
-                        channel.name);
+                        channel.getName());
             }
 
             // 4) 详情页逐条抓取+解析+入库
@@ -140,23 +159,38 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
                     Thread.sleep(intervalMs);
                 }
                 idx++;
+                long start = System.currentTimeMillis();
                 String detailJson = fetch(client, detailUrl, ua, xhrReferer, true);
+                int retryCount = 0;
                 if (detailJson == null) {
                     // 重试一次(限流场景)
                     Thread.sleep(intervalMs);
                     detailJson = fetch(client, detailUrl, ua, xhrReferer, true);
+                    retryCount = 1;
                 }
+                long cost = System.currentTimeMillis() - start;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channel.getPath(), "DETAIL",
+                        detailUrl, detailJson == null ? null : 200, cost, retryCount,
+                        detailJson == null ? "FAILED" : "SUCCESS",
+                        detailJson == null ? "FETCH_FAILED" : "", "");
                 if (detailJson == null) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     continue;
                 }
+                crawlTelemetryService.recordRaw(stats.getTaskId(), site.getCode(), detailUrl, "DETAIL",
+                        detailJson, "CRAWL-V2", "PARSED");
                 fetched++;
                 try {
                     JsonNode detail = objectMapper.readTree(detailJson);
                     String id = detail.path("Id").asText("");
-                    NoticePortalDO notice = GuizhouZtbNoticeParser.parse(
-                            detail, channel.type, baseUrl + BULLETIN_PATH + id, site.getName());
-                    noticeUpsertService.upsert(notice, stats);
+                    NoticeDTO notice = GuizhouZtbNoticeParser.parse(
+                            detail, channel.getNoticeTypeCode(), baseUrl + BULLETIN_PATH + id, site.getName());
+                    NoticeUpsertRespDTO result = noticeApi.upsert(notice);
+                    if (Boolean.TRUE.equals(result.getCreated())) {
+                        stats.setNewInsert(stats.getNewInsert() + 1);
+                    } else if (Boolean.TRUE.equals(result.getUpdated())) {
+                        stats.setUpdated(stats.getUpdated() + 1);
+                    }
                 } catch (Exception ex) {
                     // 同 CcgpSourceAdapter: 这里同时覆盖 JSON 解析与入库两步, 日志带上异常类型便于区分
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
@@ -165,7 +199,7 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
                 }
             }
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
-            log.info("[crawler] ztb_gz 频道 {} 完成: 详情{}条/失败{}条", channel.name, fetched, stats.getDetailFailed());
+            log.info("[crawler] ztb_gz 频道 {} 完成: 详情{}条/失败{}条", channel.getName(), fetched, stats.getDetailFailed());
         }
     }
 
@@ -230,38 +264,4 @@ public class GuizhouZtbSourceAdapter implements SourceAdapter {
         }
     }
 
-    private List<ChannelDef> parseChannels(String json) {
-        List<ChannelDef> result = new ArrayList<>();
-        try {
-            JsonNode array = objectMapper.readTree(json != null ? json : "[]");
-            for (JsonNode node : array) {
-                ChannelDef def = new ChannelDef();
-                def.noticeType = node.has("path") ? node.get("path").asText() : "all";
-                def.name = node.has("name") ? node.get("name").asText() : def.noticeType;
-                def.type = node.has("type") ? node.get("type").asText() : "tender";
-                def.pageCount = node.has("pageCount") ? node.get("pageCount").asInt(1) : 1;
-                result.add(def);
-            }
-        } catch (Exception ex) {
-            log.warn("[crawler] channels 配置解析失败: {}", ex.getMessage());
-        }
-        if (result.isEmpty()) {
-            // 兜底: 全部公告
-            ChannelDef def = new ChannelDef();
-            def.noticeType = "all";
-            def.name = "全部公告";
-            def.type = "tender";
-            def.pageCount = 1;
-            result.add(def);
-        }
-        return result;
-    }
-
-    /** 频道配置 */
-    private static class ChannelDef {
-        private String noticeType;
-        private String name;
-        private String type;
-        private int pageCount;
-    }
 }

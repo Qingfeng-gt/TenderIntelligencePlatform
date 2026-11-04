@@ -37,8 +37,8 @@ const submitting = ref(false)
 const bidAmount = ref<number | null>(null)
 const bidFileName = ref('')
 
-const typeLabel: Record<string, string> = { tender: '招标公告', win: '中标公告', change: '变更公告', explore: '采购公告' }
-const typeShort: Record<string, string> = { tender: '招标', win: '中标', change: '变更', explore: '采购' }
+const typeLabel: Record<string, string> = { tender: '招标公告', win: '中标公告', change: '变更公告', explore: '采购公告', qualify: '资格预审公告' }
+const typeShort: Record<string, string> = { tender: '招标', win: '中标', change: '变更', explore: '采购', qualify: '资格预审' }
 
 function formatDate(t: number | string) {
   return formatDateTime(t)
@@ -82,23 +82,23 @@ onMounted(async () => {
     <el-breadcrumb separator="/">
       <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item :to="{ path: '/notice' }">标讯大厅</el-breadcrumb-item>
-      <el-breadcrumb-item>{{ notice ? typeLabel[notice.type] : '详情' }}</el-breadcrumb-item>
+      <el-breadcrumb-item>{{ notice ? typeLabel[notice.noticeTypeCode] : '详情' }}</el-breadcrumb-item>
     </el-breadcrumb>
 
     <div v-if="notice" class="detail-card">
       <div class="detail-head">
         <div class="title-row">
-          <span class="badge" :class="`badge-${notice.type}`">{{ typeShort[notice.type] }}</span>
+          <span class="badge" :class="`badge-${notice.noticeTypeCode}`">{{ typeShort[notice.noticeTypeCode] }}</span>
           <h1 class="title">{{ notice.title }}</h1>
         </div>
         <div class="sub-row">
           <span><el-icon><component :is="Calendar" /></el-icon> 发布时间:{{ formatDate(notice.publishTime) }}</span>
-          <span>来源:{{ notice.source || '公开渠道' }}</span>
-          <el-button size="small" text type="primary" @click="router.push({ path: '/notice', query: { type: notice.type } })">
-            更多{{ typeLabel[notice.type] }} →
+          <span>来源:{{ notice.sourcePlatform || '公开渠道' }}</span>
+          <el-button size="small" text type="primary" @click="router.push({ path: '/notice', query: { type: notice.noticeTypeCode } })">
+            更多{{ typeLabel[notice.noticeTypeCode] }} →
           </el-button>
           <el-button
-            v-if="notice.type === 'tender'"
+            v-if="notice.noticeTypeCode === 'tender'"
             type="primary"
             size="small"
             @click="openBidDialog"
@@ -110,13 +110,18 @@ onMounted(async () => {
       </div>
 
       <div class="info-grid">
-        <div class="cell"><span class="k">所在地区</span><span class="v">{{ notice.province }} · {{ notice.city }}</span></div>
+        <div class="cell"><span class="k">所在地区</span><span class="v">{{ notice.provinceName }} · {{ notice.cityName }}</span></div>
         <div class="cell"><span class="k">所属行业</span><span class="v">{{ notice.industry }}</span></div>
+        <div class="cell"><span class="k">项目名称</span><span class="v">{{ notice.projectName || '—' }}</span></div>
         <div class="cell"><span class="k">项目编号</span><span class="v">{{ notice.projectNo || '—' }}</span></div>
+        <div class="cell"><span class="k">招标项目编号</span><span class="v">{{ notice.tenderProjectNo || '—' }}</span></div>
+        <div class="cell"><span class="k">标段编号</span><span class="v">{{ notice.lotNo || '—' }}</span></div>
+        <div class="cell"><span class="k">采购方式</span><span class="v">{{ notice.procurementMethodName || '—' }}</span></div>
         <div class="cell"><span class="k">预算金额</span><span class="v">{{ notice.budget ? notice.budget + ' 万元' : '—' }}</span></div>
-        <div class="cell"><span class="k">投标截止</span><span class="v">{{ notice.deadline ? formatDate(notice.deadline) : '—' }}</span></div>
-        <div class="cell"><span class="k">招标人</span><span class="v">{{ notice.tenderPerson || '—' }}</span></div>
-        <div class="cell"><span class="k">代理机构</span><span class="v">{{ notice.agency || '—' }}</span></div>
+        <div class="cell"><span class="k">最高限价</span><span class="v">{{ notice.priceCeiling ? notice.priceCeiling + ' 万元' : '—' }}</span></div>
+        <div class="cell"><span class="k">投标截止</span><span class="v">{{ notice.bidDeadline ? formatDate(notice.bidDeadline) : '—' }}</span></div>
+        <div class="cell"><span class="k">招标人</span><span class="v">{{ notice.tendererName || '—' }}</span></div>
+        <div class="cell"><span class="k">代理机构</span><span class="v">{{ notice.agencyName || '—' }}</span></div>
         <div class="cell"><span class="k">联系人</span><span class="v">{{ notice.contact || '—' }}</span></div>
       </div>
 
@@ -153,7 +158,7 @@ onMounted(async () => {
             <el-input v-model="bidFileName" placeholder="如: 标书-XXX工程.docx(演示用,不作上传)" />
           </el-form-item>
           <el-form-item label="截止时间">
-            <span class="deadline">{{ notice?.deadline ? formatDate(notice.deadline) : '以公告为准' }}</span>
+            <span class="deadline">{{ notice?.bidDeadline ? formatDate(notice.bidDeadline) : '以公告为准' }}</span>
           </el-form-item>
         </el-form>
         <p class="tip">演示流程: 采用并纳入投标项目管理,正式版将关联会员鉴权与文件上传</p>

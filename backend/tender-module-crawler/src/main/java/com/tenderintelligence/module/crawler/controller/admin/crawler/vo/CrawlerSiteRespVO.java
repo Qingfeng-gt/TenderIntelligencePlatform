@@ -24,4 +24,22 @@ public class CrawlerSiteRespVO {
 
     @Schema(description = "详情页请求间隔(ms)")
     private Long intervalMs;
+
+    @Schema(description = "站点层级: official/industry/agency")
+    private String tier;
+
+    @Schema(description = "优先级，越小越优先")
+    private Integer priority;
+
+    @Schema(description = "健康状态: UNKNOWN/HEALTHY/DEGRADED/DOWN")
+    private String healthStatus;
+
+    @Schema(description = "最近成功时间")
+    private java.time.LocalDateTime lastSuccessTime;
+
+    @Schema(description = "最近失败时间")
+    private java.time.LocalDateTime lastFailTime;
+
+    @Schema(description = "适配器版本")
+    private String adapterVersion;
 }

@@ -8,7 +8,7 @@ import type { HomeStat, Notice, PageResult } from '@/types'
 
 const router = useRouter()
 const keyword = ref('')
-const stat = ref<HomeStat>({ todayCount: 0, totalCount: 0, provinces: 0, industries: 0 })
+const stat = ref<HomeStat>({ todayCount: 0, totalCount: 0, provinces: 0, industries: 0, projects: 0 })
 const latest = ref<Notice[]>([])
 const loading = ref(false)
 
@@ -21,11 +21,11 @@ const typeTabs = [
 ]
 const activeTab = ref('')
 
-const typeLabel: Record<string, string> = { tender: '招标', win: '中标', change: '变更', explore: '采购' }
+const typeLabel: Record<string, string> = { tender: '招标', win: '中标', change: '变更', explore: '采购', qualify: '资格预审' }
 
 async function loadLatest() {
   loading.value = true
-  const res: PageResult<Notice> = await listNotices({ type: activeTab.value as any, page: 1, pageSize: 8 })
+  const res: PageResult<Notice> = await listNotices({ noticeTypeCode: activeTab.value, page: 1, pageSize: 8 })
   latest.value = res.list
   loading.value = false
 }
@@ -109,11 +109,11 @@ onMounted(async () => {
             :to="`/notice/${n.id}`"
             class="notice-row"
           >
-            <span class="badge" :class="`badge-${n.type}`">{{ typeLabel[n.type] }}</span>
+            <span class="badge" :class="`badge-${n.noticeTypeCode}`">{{ typeLabel[n.noticeTypeCode] }}</span>
             <div class="n-body">
               <div class="n-title">{{ n.title }}</div>
               <div class="n-meta">
-                <span>{{ n.province }}·{{ n.city }}</span>
+                <span>{{ n.provinceName }}·{{ n.cityName }}</span>
                 <span>{{ n.industry }}</span>
                 <span v-if="n.budget">预算 {{ n.budget }} 万元</span>
               </div>

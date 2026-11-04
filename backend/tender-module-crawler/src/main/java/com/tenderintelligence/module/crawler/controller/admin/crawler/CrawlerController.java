@@ -45,7 +45,7 @@ public class CrawlerController {
     @Operation(summary = "手动触发采集(异步执行,返回任务编号)")
     @Parameter(name = "siteCode", description = "站点标识,缺省采集所有启用站点", example = "ccgp")
     public CommonResult<Long> run(@RequestParam(value = "siteCode", required = false) String siteCode) {
-        return success(crawlService.run(siteCode));
+        return success(crawlService.run(siteCode, "MANUAL"));
     }
 
     @GetMapping("/site/list")

@@ -44,4 +44,16 @@ public class CrawlerTaskRespVO {
 
     @Schema(description = "失败原因")
     private String errorMsg;
+
+    @Schema(description = "触发方式: MANUAL/SCHEDULE/RETRY")
+    private String triggerType;
+
+    @Schema(description = "总耗时(ms)")
+    private Long durationMs;
+
+    @Schema(description = "异常分类")
+    private String errorType;
+
+    @Schema(description = "数据日期")
+    private java.time.LocalDate dataDate;
 }

@@ -1,6 +1,6 @@
 package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 
-import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeAttachmentDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,10 +23,10 @@ class CcgpAttachmentParserTest {
                 <p class='fjxx'>附件信息：</p><ul class="fjxx" style="color: #0065ef;list-style-type: none;"><li><p style="display:inline-block"><a href="https://sx2gov2open2doc.uos.sxzfcg.zcygov.cn/1024FPA/149900/20269/5b1c0751.pdf" ignore=1>10.8采购文件2-某局器材采购项目(2).pdf</a></p><p style="display:inline-block;margin-left:20px">661.5K</p></li></ul>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(1);
-        NoticeAttachmentDO attachment = attachments.get(0);
+        NoticeAttachmentDTO attachment = attachments.get(0);
         assertThat(attachment.getFileName()).isEqualTo("10.8采购文件2-某局器材采购项目(2).pdf");
         assertThat(attachment.getFileUrl()).isEqualTo("https://sx2gov2open2doc.uos.sxzfcg.zcygov.cn/1024FPA/149900/20269/5b1c0751.pdf");
         assertThat(attachment.getFileType()).isEqualTo("pdf");
@@ -41,7 +41,7 @@ class CcgpAttachmentParserTest {
                 <span style="margin-left: 4px;">附件：</span> <br /> <div style="margin-left: 22px;"> <a href="https://hljcg.hlj.gov.cn/gpx-public-file?accessCode=eyJhbGciOiJNRDUiLCJ0eXBlIjoiMDQifQ==" ignore=1>某项目招标文件.zip</a> </div>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(1);
         assertThat(attachments.get(0).getFileType()).isEqualTo("zip");
@@ -55,7 +55,7 @@ class CcgpAttachmentParserTest {
                 <ul class="fjxx"><li><p><a href="https://x.gov.cn/a.pdf" ignore=1>甲.pdf</a></p><p>546.3K</p></li></ul><ul class="fjxx"><li><p><a href="https://x.gov.cn/b.docx" ignore=1>乙文件</a></p><p>3.7M</p></li></ul>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(2);
         assertThat(attachments.get(0).getFileType()).isEqualTo("pdf");
@@ -104,10 +104,10 @@ class CcgpAttachmentParserTest {
                 <a href="https://x.gov.cn/a.pdf" ignore=1>甲.pdf</a><a href="https://x.gov.cn/a.pdf" ignore=1>甲副本.pdf</a><a href="https://x.gov.cn/b.pdf" ignore=1>乙.pdf</a>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(2);
-        assertThat(attachments).extracting(NoticeAttachmentDO::getFileUrl)
+        assertThat(attachments).extracting(NoticeAttachmentDTO::getFileUrl)
                 .containsExactly("https://x.gov.cn/a.pdf", "https://x.gov.cn/b.pdf");
     }
 
@@ -118,7 +118,7 @@ class CcgpAttachmentParserTest {
                 <a href="https://x.gov.cn/dl?num=8b80&amp;flag=isWebsite" ignore=1>结果公告.pdf</a>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(1);
         assertThat(attachments.get(0).getFileUrl()).isEqualTo("https://x.gov.cn/dl?num=8b80&flag=isWebsite");
@@ -131,7 +131,7 @@ class CcgpAttachmentParserTest {
                 <a href="https://x.gov.cn/1024FPA/20269/采购文件.pdf" ignore=1></a>
                 """;
 
-        List<NoticeAttachmentDO> attachments = CcgpAttachmentParser.parse(content);
+        List<NoticeAttachmentDTO> attachments = CcgpAttachmentParser.parse(content);
 
         assertThat(attachments).hasSize(1);
         assertThat(attachments.get(0).getFileName()).isEqualTo("采购文件.pdf");

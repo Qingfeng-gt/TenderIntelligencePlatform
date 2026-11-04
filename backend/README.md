@@ -149,7 +149,7 @@ mvn -DskipTests install
 mvn -pl tender-server -am -DskipTests package
 java -jar tender-server/target/tender-server.jar --spring.profiles.active=local
 # 管理端:  http://127.0.0.1:48080/admin-api (Knife4j: /doc.html)
-#  用户端:  http://127.0.0.1:48080/app-api   /  标讯公开: /admin-api/notice/list
+#  用户端:  http://127.0.0.1:48080/app-api   /  标讯公开: /admin-api/notice/page
 ```
 
 - 环境配置:`application.yaml`(公共)+ `application-local.yaml`(本地开发)+ `application-dev.yaml`(测试)

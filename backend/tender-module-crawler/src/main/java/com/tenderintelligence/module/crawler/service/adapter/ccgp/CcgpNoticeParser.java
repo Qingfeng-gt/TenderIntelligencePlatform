@@ -1,7 +1,7 @@
 package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 
 import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,8 +45,8 @@ public final class CcgpNoticeParser {
      * @param sourceUrl 源站详情 URL(唯一去重键)
      * @param source    来源网站名称
      */
-    public static NoticePortalDO parse(String html, String type, String sourceUrl, String source) {
-        NoticePortalDO notice = new NoticePortalDO();
+    public static NoticeDTO parse(String html, String type, String sourceUrl, String source) {
+        NoticeDTO notice = new NoticeDTO();
         notice.setType(type);
         notice.setSourceUrl(sourceUrl);
         notice.setSource(source);

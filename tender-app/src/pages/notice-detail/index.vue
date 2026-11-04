@@ -4,7 +4,7 @@
       <text class="p-title">公告详情 —— 待甲实现</text>
       <text class="p-line">标题 / 正文（HTML）/ 附件 / 联系方式。</text>
       <text class="p-line">这是 M6 性能基准的**次测页面**（长文本渲染）。</text>
-      <text class="p-line">接口：GET /admin-api/notice/get?id=（已放行免登录）</text>
+      <text class="p-line">接口：GET /admin-api/notice/detail?id=（已放行免登录）</text>
       <text class="p-line">参数从上一页传入：onLoad(options) 里的 options.id</text>
     </view>
   </view>

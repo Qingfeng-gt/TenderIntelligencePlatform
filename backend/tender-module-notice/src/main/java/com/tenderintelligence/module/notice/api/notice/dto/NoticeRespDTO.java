@@ -20,10 +20,46 @@ public class NoticeRespDTO {
      */
     private Long id;
 
+    /** 项目 ID */
+    private Long projectId;
+    /** 招标项目 ID */
+    private Long tenderProjectId;
+    /** 标段 ID */
+    private Long lotId;
+
     /**
      * 公告标题
      */
     private String title;
+
+    /** 公告类型代码 */
+    private String noticeTypeCode;
+    /** 公告类型名称 */
+    private String noticeTypeName;
+    /** 项目名称 */
+    private String projectName;
+    /** 招标项目名称 */
+    private String tenderProjectName;
+    /** 采购方式名称 */
+    private String procurementMethodName;
+    /** 省级代码 */
+    private String provinceCode;
+    /** 省份名称 */
+    private String provinceName;
+    /** 市级代码 */
+    private String cityCode;
+    /** 城市名称 */
+    private String cityName;
+    /** 最高限价（万元） */
+    private BigDecimal priceCeiling;
+    /** 保证金（万元） */
+    private BigDecimal depositAmount;
+    /** 招标人名称 */
+    private String tendererName;
+    /** 代理机构名称 */
+    private String agencyName;
+    /** 投标截止时间（国标列） */
+    private LocalDateTime bidDeadline;
 
     /**
      * 项目编号（源站）

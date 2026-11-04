@@ -1,7 +1,7 @@
 package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 
 import com.tenderintelligence.module.crawler.service.AttachmentSupport;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeAttachmentDTO;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,8 +52,8 @@ final class CcgpAttachmentParser {
      * @param content 正文 HTML 片段
      * @return 附件列表(按源站出现次序; 无附件时为空列表)
      */
-    static List<NoticeAttachmentDO> parse(String content) {
-        List<NoticeAttachmentDO> attachments = new ArrayList<>();
+    static List<NoticeAttachmentDTO> parse(String content) {
+        List<NoticeAttachmentDTO> attachments = new ArrayList<>();
         if (content == null || content.isEmpty()) {
             return attachments;
         }
@@ -81,7 +81,7 @@ final class CcgpAttachmentParser {
             if (!seenUrls.add(url)) {
                 continue;
             }
-            NoticeAttachmentDO attachment = new NoticeAttachmentDO();
+            NoticeAttachmentDTO attachment = new NoticeAttachmentDTO();
             String fileName = name.isEmpty() ? AttachmentSupport.fileNameFromUrl(url) : name;
             attachment.setFileName(AttachmentSupport.truncate(fileName, AttachmentSupport.MAX_NAME_LENGTH));
             attachment.setFileUrl(AttachmentSupport.truncate(url, AttachmentSupport.MAX_URL_LENGTH));

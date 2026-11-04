@@ -3,41 +3,46 @@ package com.tenderintelligence.module.notice.service;
 import com.tenderintelligence.framework.common.pojo.PageResult;
 import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticePageReqVO;
 import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticeRespVO;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticeStatsRespVO;
+import com.tenderintelligence.module.notice.controller.admin.notice.vo.RegionRespVO;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 /**
- * 招投标公告 Service 接口
+ * 招投标公告 Service 接口（四层模型读路径）
  */
 public interface NoticeService {
 
     /**
-     * 分页查询公告(用户端门户)
+     * 分页查询公告
      */
-    PageResult<NoticePortalDO> getNoticePage(@Valid NoticePageReqVO pageReqVO);
+    PageResult<NoticeRespVO> getNoticePage(@Valid NoticePageReqVO pageReqVO);
 
     /**
-     * 获取公告详情
+     * 获取公告详情（含附件、澄清修改、关联企业）
      */
-    NoticePortalDO getNotice(Long id);
+    NoticeRespVO getNoticeDetail(Long id);
 
     /**
-     * 今日新增公告数量
+     * 获取公告摘要（不含正文、附件、澄清修改、关联企业）
+     *
+     * <p>给内部写链路（如投标创建）取标题/截止时间用，避免不必要的关联查询。
      */
-    Long getTodayCount();
+    NoticeRespVO getNotice(Long id);
 
     /**
-     * 公告总数(用户端首页统计)
+     * 门户首页统计
      */
-    Long getTotalCount();
+    NoticeStatsRespVO getStats();
 
     /**
-     * 覆盖省份数量(用户端首页统计)
+     * 省级行政区划选项
      */
-    Long getProvinceCount();
+    List<RegionRespVO> getProvinces();
 
     /**
-     * 行业分类数量(用户端首页统计)
+     * 行业选项（规则抽取结果去重）
      */
-    Long getIndustryCount();
+    List<String> getIndustries();
 }

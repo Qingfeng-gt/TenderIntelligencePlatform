@@ -52,6 +52,11 @@ public class CrawlServiceImpl implements CrawlService {
 
     @Override
     public Long run(String siteCode) {
+        return run(siteCode, "SCHEDULE");
+    }
+
+    @Override
+    public Long run(String siteCode, String triggerType) {
         // 每轮先回收卡死的 RUNNING 任务(进程崩溃后遗留,避免永久挡住该站点)
         crawlTaskMapper.failStaleTasks(Duration.ofHours(4));
         List<CrawlerSiteDO> sites;
@@ -76,7 +81,7 @@ public class CrawlServiceImpl implements CrawlService {
                 log.warn("[crawler] 站点[{}]已有 RUNNING 任务, 跳过本次提交", site.getCode());
                 continue;
             }
-            CrawlerTaskDO task = createTask(site.getCode());
+            CrawlerTaskDO task = createTask(site.getCode(), triggerType);
             if (firstTaskId == null) {
                 firstTaskId = task.getId();
             }
@@ -85,12 +90,12 @@ public class CrawlServiceImpl implements CrawlService {
         return firstTaskId;
     }
 
-    private CrawlerTaskDO createTask(String siteCode) {
+    private CrawlerTaskDO createTask(String siteCode, String triggerType) {
         CrawlerTaskDO task = new CrawlerTaskDO();
         task.setSiteCode(siteCode);
         task.setStartTime(LocalDateTime.now());
         task.setStatus(CrawlerTaskStatusEnum.RUNNING.getStatus());
-        task.setTriggerType("SCHEDULE");
+        task.setTriggerType(triggerType == null || triggerType.isBlank() ? "SCHEDULE" : triggerType);
         task.setDataDate(LocalDate.now());
         crawlTaskMapper.insert(task);
         return task;
@@ -109,15 +114,22 @@ public class CrawlServiceImpl implements CrawlService {
         task.setConfigSnapshot(site.getConfig());
         task.setErrorType("");
         CrawlStats stats = new CrawlStats();
+        stats.setTaskId(task.getId());
         try {
             adapter.crawl(site, stats);
             task.setStatus(CrawlerTaskStatusEnum.SUCCESS.getStatus());
             task.setErrorMsg("");
+            site.setLastSuccessTime(LocalDateTime.now());
+            site.setHealthStatus("HEALTHY");
+            crawlSiteMapper.updateById(site);
         } catch (Exception ex) {
             task.setStatus(CrawlerTaskStatusEnum.FAILED.getStatus());
             task.setErrorType(ex.getClass().getSimpleName());
             task.setErrorMsg(ex.getMessage() == null ? ex.getClass().getSimpleName()
                     : ex.getMessage().substring(0, Math.min(500, ex.getMessage().length())));
+            site.setLastFailTime(LocalDateTime.now());
+            site.setHealthStatus("DEGRADED");
+            crawlSiteMapper.updateById(site);
             log.error("[crawler] 采集站点[{}] 失败: {}", site.getName(), task.getErrorMsg(), ex);
         }
         task.setEndTime(LocalDateTime.now());

@@ -10,4 +10,7 @@ public interface ErrorCodeConstants {
     /** 公告不存在 */
     ErrorCode NOTICE_NOT_EXISTS = new ErrorCode(1_060_001_000, "公告不存在");
 
+    /** 项目不存在 */
+    ErrorCode PROJECT_NOT_EXISTS = new ErrorCode(1_060_002_000, "项目不存在");
+
 }

@@ -2,8 +2,8 @@ package com.tenderintelligence.module.crawler.service.adapter.ggzy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeAttachmentDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -88,7 +88,7 @@ class GgzyNoticeParserTest {
         }
     }
 
-    private static NoticePortalDO parse(JsonNode record, String html) {
+    private static NoticeDTO parse(JsonNode record, String html) {
         return GgzyNoticeParser.parse(record, html, "tender", DETAIL_URL, SITE_NAME);
     }
 
@@ -120,7 +120,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("码表与关键词都识别不出时才用频道兜底类型")
     void fallsBackToChannelTypeLast() {
-        NoticePortalDO notice = GgzyNoticeParser.parse(
+        NoticeDTO notice = GgzyNoticeParser.parse(
                 record("{\"informationType\":\"9999\",\"informationTypeText\":\"\"}"),
                 page("<p>正文</p>"), "explore", DETAIL_URL, SITE_NAME);
 
@@ -143,7 +143,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("地区码直取源站 province 字段(已是 6 位码)")
     void takesRegionCodeFromListField() {
-        NoticePortalDO notice = parse(record(null), page("<p>正文</p>"));
+        NoticeDTO notice = parse(record(null), page("<p>正文</p>"));
 
         assertThat(notice.getRegionCode()).isEqualTo("510000");
         assertThat(notice.getProvince()).isEqualTo("四川");
@@ -160,7 +160,7 @@ class GgzyNoticeParserTest {
     void fallsBackToRegionExtractor() {
         // 城市锚点须出现在扫描起点附近: NoticeRegionExtractor 的 CITY 是非贪婪 {2,12}?市,
         // 从句中被长机构名挡住就取不到(该行为是 ccgp 也在用的既有实现, 此处只验证回落链路接通)
-        NoticePortalDO notice = parse(
+        NoticeDTO notice = parse(
                 record("{\"province\":null,\"provinceText\":null,\"cityText\":null,"
                         + "\"title\":\"武汉市江岸区某医院医疗设备采购项目招标公告\"}"),
                 page("<p>本项目位于湖北省, 招标人为某单位。</p>"));
@@ -234,7 +234,7 @@ class GgzyNoticeParserTest {
     @DisplayName("""
             源站把投标截止与开标合并写在一个锚点里时, deadline 与 openTime 同值(与 ccgp 同源同理)""")
     void parsesCombinedDeadlineAndOpenTime() {
-        NoticePortalDO notice = parse(record(null), page("""
+        NoticeDTO notice = parse(record(null), page("""
                 <p>5、投标文件的递交</p>
                 <p>投标截止时间（开标时间）:2026-10-10 10:00</p>
                 """));
@@ -246,7 +246,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("招标人/代理机构/联系人/电话 从正文锚点提取")
     void parsesContactFields() {
-        NoticePortalDO notice = parse(record(null), page("""
+        NoticeDTO notice = parse(record(null), page("""
                 <p>招标人:成光镜界（四川）科技有限公司</p>
                 <p>招标代理机构:中咨高技术咨询中心有限公司</p>
                 <p>联系人:鲜老师</p>
@@ -262,7 +262,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("「联系人」锚点不能误命中「联系方式」")
     void contactAnchorDoesNotMatchPhoneLabel() {
-        NoticePortalDO notice = parse(record(null), page("<p>联系方式:028-81208678</p>"));
+        NoticeDTO notice = parse(record(null), page("<p>联系方式:028-81208678</p>"));
 
         assertThat(notice.getContact()).isNull();
     }
@@ -270,7 +270,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("正文无任何结构化锚点时字段为 null, 但不抛异常")
     void toleratesContentWithoutAnchors() {
-        NoticePortalDO notice = parse(record(null), page("<p>本公告无结构化字段。</p>"));
+        NoticeDTO notice = parse(record(null), page("<p>本公告无结构化字段。</p>"));
 
         assertThat(notice.getProjectNo()).isNull();
         assertThat(notice.getBudget()).isNull();
@@ -293,10 +293,10 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("正文内的附件锚点相对路径要补成绝对地址(notice_attachment.file_url 要求绝对)")
     void resolvesRelativeAttachmentUrl() {
-        NoticePortalDO notice = parse(record(null), page(
+        NoticeDTO notice = parse(record(null), page(
                 "<p><a href=\"/information/upload/a.pdf\">采购文件.pdf</a></p>"));
 
-        List<NoticeAttachmentDO> attachments = notice.getAttachments();
+        List<NoticeAttachmentDTO> attachments = notice.getAttachments();
         assertThat(attachments).hasSize(1);
         assertThat(attachments.get(0).getFileUrl())
                 .isEqualTo("https://www.ggzy.gov.cn/information/upload/a.pdf");
@@ -307,7 +307,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("非附件链接不留存 —— 该站正文来自各省平台, 无统一附件区块, 只能靠扩展名保守判定")
     void ignoresLinksWithoutFileExtension() {
-        NoticePortalDO notice = parse(record(null), page("""
+        NoticeDTO notice = parse(record(null), page("""
                 <p>详见 <a href="https://www.gov.cn/zhengce/index.html">相关政策</a>,
                    以及 <a href="https://zzgjs.aipuret.cn/">获取招标文件</a>。</p>
                 """));
@@ -318,7 +318,7 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("同一 URL 重复列出时只留一条")
     void deduplicatesAttachmentsByUrl() {
-        NoticePortalDO notice = parse(record(null), page("""
+        NoticeDTO notice = parse(record(null), page("""
                 <a href="https://x.gov.cn/a.pdf">甲.pdf</a><a href="https://x.gov.cn/a.pdf">甲副本.pdf</a>
                 """));
 

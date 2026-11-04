@@ -3,8 +3,8 @@ package com.tenderintelligence.module.crawler.service.adapter.ztb_gz;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.tenderintelligence.module.crawler.service.AttachmentSupport;
 import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeAttachmentDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -68,8 +68,8 @@ public final class GuizhouZtbNoticeParser {
      * @param sourceUrl 源站展示页 URL(唯一去重键)
      * @param source   来源网站名称
      */
-    public static NoticePortalDO parse(JsonNode detail, String fallback, String sourceUrl, String source) {
-        NoticePortalDO notice = new NoticePortalDO();
+    public static NoticeDTO parse(JsonNode detail, String fallback, String sourceUrl, String source) {
+        NoticeDTO notice = new NoticeDTO();
         notice.setSourceUrl(sourceUrl);
         notice.setSource(source);
 
@@ -131,8 +131,8 @@ public final class GuizhouZtbNoticeParser {
             {"Url", "FileUrl", "FilePath", "Path", "DownloadUrl", "File", "url", "fileUrl", "filePath", "path"};
 
     /** 解析详情 JSON 里的附件字段 */
-    private static List<NoticeAttachmentDO> parseAttachments(JsonNode detail) {
-        List<NoticeAttachmentDO> attachments = new ArrayList<>();
+    private static List<NoticeAttachmentDTO> parseAttachments(JsonNode detail) {
+        List<NoticeAttachmentDTO> attachments = new ArrayList<>();
         if (detail == null) {
             return attachments;
         }
@@ -148,7 +148,7 @@ public final class GuizhouZtbNoticeParser {
     }
 
     /** 收一个附件字段下的所有条目(字符串 / 数组 / 对象三种形态都吃) */
-    private static void collectAttachments(String field, JsonNode node, List<NoticeAttachmentDO> attachments,
+    private static void collectAttachments(String field, JsonNode node, List<NoticeAttachmentDTO> attachments,
                                            Set<String> seenUrls) {
         if (node.isArray()) {
             for (JsonNode item : node) {
@@ -181,7 +181,7 @@ public final class GuizhouZtbNoticeParser {
         if (!seenUrls.add(url)) {
             return;
         }
-        NoticeAttachmentDO attachment = new NoticeAttachmentDO();
+        NoticeAttachmentDTO attachment = new NoticeAttachmentDTO();
         String fileName = name == null || name.isBlank() ? AttachmentSupport.fileNameFromUrl(url) : name.strip();
         attachment.setFileName(AttachmentSupport.truncate(fileName, AttachmentSupport.MAX_NAME_LENGTH));
         attachment.setFileUrl(AttachmentSupport.truncate(url, AttachmentSupport.MAX_URL_LENGTH));

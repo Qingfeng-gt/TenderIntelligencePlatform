@@ -2,11 +2,15 @@ package com.tenderintelligence.module.crawler.service.adapter.ggzy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerChannelDO;
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
+import com.tenderintelligence.module.crawler.dal.mysql.CrawlerChannelMapper;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
-import com.tenderintelligence.module.crawler.service.NoticeUpsertService;
+import com.tenderintelligence.module.crawler.service.CrawlTelemetryService;
 import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.NoticeApi;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeUpsertRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,7 +23,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +76,11 @@ public class GgzySourceAdapter implements SourceAdapter {
     private static final int RESP_CAPTCHA = 829;
 
     @Resource
-    private NoticeUpsertService noticeUpsertService;
+    private NoticeApi noticeApi;
+    @Resource
+    private CrawlerChannelMapper crawlerChannelMapper;
+    @Resource
+    private CrawlTelemetryService crawlTelemetryService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -107,13 +114,24 @@ public class GgzySourceAdapter implements SourceAdapter {
             log.warn("[crawler] ggzy 首页预热失败(不影响接口调用): {}", initialUrl);
         }
 
-        // 3) 频道循环(channels[].path = DEAL_CLASSIFY 类别码)
-        List<ChannelDef> channels = parseChannels(site.getChannels());
-        for (ChannelDef channel : channels) {
+        // 3) 频道循环（crawler_channel.getPath() = DEAL_CLASSIFY 类别码）
+        List<CrawlerChannelDO> channels = crawlerChannelMapper.selectEnabledBySiteCode(site.getCode());
+        if (channels.isEmpty()) {
+            throw new IllegalStateException("ggzy 未配置任何启用频道(crawler_channel)");
+        }
+        for (CrawlerChannelDO channel : channels) {
             // 3.1) 列表 → 收集详情 URL(连同列表记录本身: 类型/省份/行业以列表字段为准)
             Map<String, JsonNode> candidates = new LinkedHashMap<>();
-            for (int page = 1; page <= channel.pageCount; page++) {
+            int pageCount = channel.getPageCount() == null ? 1 : Math.max(1, channel.getPageCount());
+            for (int page = 1; page <= pageCount; page++) {
+                long start = System.currentTimeMillis();
                 JsonNode root = fetchList(client, baseUrl, listReferer, ua, dealTime, channel, page, stats);
+                long cost = System.currentTimeMillis() - start;
+                String listUrl = baseUrl + LIST_PATH + "?DEAL_CLASSIFY=" + channel.getPath() + "&PAGENUMBER=" + page;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channel.getPath(), "LIST",
+                        listUrl, root == null ? null : 200, cost, 0,
+                        root == null ? "FAILED" : "SUCCESS",
+                        root == null ? "FETCH_FAILED" : "", "");
                 if (root == null) {
                     continue;
                 }
@@ -129,13 +147,13 @@ public class GgzySourceAdapter implements SourceAdapter {
                     // 801 错误 / 804 请细化查询条件 等属**确定性**失败(可恢复的 800 已在 fetchList 里重试过),
                     // 换下一页是同一个查询条件, 结果只会一样, 故终止本频道翻页并留日志
                     log.warn("[crawler] ggzy 列表响应异常 code={} message={} (类别 {} 第{}页), 终止本频道翻页",
-                            code, root.path("message").asText(""), channel.path, page);
+                            code, root.path("message").asText(""), channel.getPath(), page);
                     break;
                 }
                 JsonNode data = root.path("data");
                 int parsed = collectRecords(baseUrl, data, candidates);
                 stats.setListParsed(stats.getListParsed() + parsed);
-                log.info("[crawler] ggzy 频道 {} 第{}页: 解析出 {} 条", channel.name, page, parsed);
+                log.info("[crawler] ggzy 频道 {} 第{}页: 解析出 {} 条", channel.getName(), page, parsed);
 
                 if (isCapReached(data, channel)) {
                     break;
@@ -145,7 +163,7 @@ public class GgzySourceAdapter implements SourceAdapter {
                 if (pages > 0 && page >= pages) {
                     break;
                 }
-                if (page < channel.pageCount) {
+                if (page < pageCount) {
                     Thread.sleep(intervalMs);
                 }
             }
@@ -160,11 +178,19 @@ public class GgzySourceAdapter implements SourceAdapter {
                     Thread.sleep(intervalMs);
                 }
                 // 详情页的 Referer 用其外壳页(a 页), 与浏览器 iframe 的实际加载一致
+                long start = System.currentTimeMillis();
                 String html = fetchGet(client, detailUrl, ua, detailUrl.replace("/html/b/", "/html/a/"));
+                long cost = System.currentTimeMillis() - start;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channel.getPath(), "DETAIL",
+                        detailUrl, html == null ? null : 200, cost, 0,
+                        html == null ? "FAILED" : "SUCCESS",
+                        html == null ? "FETCH_FAILED" : "", "");
                 if (html == null) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     continue;
                 }
+                crawlTelemetryService.recordRaw(stats.getTaskId(), site.getCode(), detailUrl, "DETAIL",
+                        html, "CRAWL-V2", "PARSED");
                 // 空正文记录不入库: 该平台只做元数据汇聚, 正文留在原交易平台。
                 // 实测正文可得率按类别差异极大(工程建设 7/10、政府采购 2/10、国有产权 0/10),
                 // 入库这些记录只会得到标题可点、正文空白的详情页, 故跳过并计入失败数。
@@ -174,9 +200,9 @@ public class GgzySourceAdapter implements SourceAdapter {
                     continue;
                 }
                 fetched++;
-                NoticePortalDO notice;
+                NoticeDTO notice;
                 try {
-                    notice = GgzyNoticeParser.parse(candidate.getValue(), html, channel.type, detailUrl,
+                    notice = GgzyNoticeParser.parse(candidate.getValue(), html, channel.getNoticeTypeCode(), detailUrl,
                             site.getName());
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
@@ -185,7 +211,12 @@ public class GgzySourceAdapter implements SourceAdapter {
                     continue;
                 }
                 try {
-                    noticeUpsertService.upsert(notice, stats);
+                    NoticeUpsertRespDTO result = noticeApi.upsert(notice);
+                    if (Boolean.TRUE.equals(result.getCreated())) {
+                        stats.setNewInsert(stats.getNewInsert() + 1);
+                    } else if (Boolean.TRUE.equals(result.getUpdated())) {
+                        stats.setUpdated(stats.getUpdated() + 1);
+                    }
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     log.warn("[crawler] ggzy 入库失败 {}: [{}] {}", detailUrl, ex.getClass().getSimpleName(),
@@ -194,7 +225,7 @@ public class GgzySourceAdapter implements SourceAdapter {
             }
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
             log.info("[crawler] ggzy 频道 {} 完成: 详情{}条/无正文跳过{}条/失败{}条",
-                    channel.name, fetched, emptyBody, stats.getDetailFailed());
+                    channel.getName(), fetched, emptyBody, stats.getDetailFailed());
         }
     }
 
@@ -212,8 +243,8 @@ public class GgzySourceAdapter implements SourceAdapter {
      * 频控, 但源站确有该响应码, 故按可恢复错误处理。
      */
     private JsonNode fetchList(HttpClient client, String baseUrl, String referer, String ua,
-                               String dealTime, ChannelDef channel, int page, CrawlStats stats) {
-        String body = "DEAL_TIME=" + encode(dealTime) + "&DEAL_CLASSIFY=" + encode(channel.path)
+                               String dealTime, CrawlerChannelDO channel, int page, CrawlStats stats) {
+        String body = "DEAL_TIME=" + encode(dealTime) + "&DEAL_CLASSIFY=" + encode(channel.getPath())
                 + "&PAGENUMBER=" + page;
         for (int attempt = 1; attempt <= 2; attempt++) {
             String text = post(client, baseUrl + LIST_PATH, body, ua, referer);
@@ -227,11 +258,11 @@ public class GgzySourceAdapter implements SourceAdapter {
             } catch (Exception ex) {
                 // 返回的是 HTML(如缺 DEAL_TIME 时源站给的 404 页面)说明请求形态有变, 需人工核对
                 log.warn("[crawler] ggzy 列表响应不是 JSON(类别 {} 第{}页), 响应体前 200 字符: {}",
-                        channel.path, page, GgzyHtmlSupport.abbreviate(text));
+                        channel.getPath(), page, GgzyHtmlSupport.abbreviate(text));
                 return null;
             }
             if (root.path("code").asInt(0) == RESP_TOO_FREQUENT && attempt == 1) {
-                log.warn("[crawler] ggzy 列表响应「操作过于频繁」(类别 {} 第{}页), 休眠后重试", channel.path, page);
+                log.warn("[crawler] ggzy 列表响应「操作过于频繁」(类别 {} 第{}页), 休眠后重试", channel.getPath(), page);
                 sleepQuietly(3000);
                 continue;
             }
@@ -271,14 +302,14 @@ public class GgzySourceAdapter implements SourceAdapter {
      * 缓解手段是收紧 {@code dealTime}(改用更窄的时间窗), 而不是加大 pageCount —— pageCount 再大
      * 也翻不出被源站截掉的记录。
      */
-    private boolean isCapReached(JsonNode data, ChannelDef channel) {
+    private boolean isCapReached(JsonNode data, CrawlerChannelDO channel) {
         int total = data.path("total").asInt(0);
         if (total < TOTAL_CAP) {
             return false;
         }
         log.warn("[crawler] ggzy 频道 {} 结果集触及源站 {} 条上限(total={}, 每页{}条), "
                         + "本轮该频道数据可能被截断; 缓解办法是在 crawler_site.config 里把 dealTime 换到更窄的时间窗",
-                channel.name, TOTAL_CAP, total, PAGE_SIZE);
+                channel.getName(), TOTAL_CAP, total, PAGE_SIZE);
         return true;
     }
 
@@ -376,44 +407,4 @@ public class GgzySourceAdapter implements SourceAdapter {
         }
     }
 
-    /** channels[].path = DEAL_CLASSIFY 类别码 */
-    private List<ChannelDef> parseChannels(String json) {
-        List<ChannelDef> result = new ArrayList<>();
-        try {
-            JsonNode array = objectMapper.readTree(json != null ? json : "[]");
-            for (JsonNode node : array) {
-                if (!node.hasNonNull("path")) {
-                    continue;
-                }
-                ChannelDef def = new ChannelDef();
-                def.path = node.get("path").asText();
-                def.name = node.has("name") ? node.get("name").asText() : def.path;
-                def.type = node.has("type") ? node.get("type").asText() : "tender";
-                def.pageCount = node.has("pageCount") ? node.get("pageCount").asInt(1) : 1;
-                result.add(def);
-            }
-        } catch (Exception ex) {
-            log.warn("[crawler] ggzy channels 配置解析失败: {}", ex.getMessage());
-        }
-        if (result.isEmpty()) {
-            // 兜底: 工程建设(该站对本项目的最大增量, ccgp 未覆盖)
-            ChannelDef def = new ChannelDef();
-            def.path = "01";
-            def.name = "工程建设";
-            def.type = "tender";
-            def.pageCount = 2;
-            result.add(def);
-        }
-        return result;
-    }
-
-    /** 频道配置 */
-    private static class ChannelDef {
-        /** DEAL_CLASSIFY 类别码(01 工程建设 / 03 土地使用权 / 05 国有产权 …) */
-        private String path;
-        private String name;
-        /** 兜底类型: 仅当类型码与文本关键词都识别不出时使用 */
-        private String type;
-        private int pageCount;
-    }
 }

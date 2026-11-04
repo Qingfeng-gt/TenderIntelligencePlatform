@@ -8,6 +8,8 @@ import lombok.Data;
 @Data
 public class CrawlStats {
 
+    /** 当前采集任务 ID（遥测用） */
+    private Long taskId;
     /** 列表页抓取数 */
     private int listFetched;
     /** 列表解析出公告数 */

@@ -6,7 +6,7 @@ import com.tenderintelligence.module.bid.dal.mysql.BidProjectMapper;
 import com.tenderintelligence.module.bid.enums.BidProjectStatusEnum;
 import com.tenderintelligence.module.bid.enums.ErrorCodeConstants;
 import com.tenderintelligence.module.bid.service.BidProjectService;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.controller.admin.notice.vo.NoticeRespVO;
 import com.tenderintelligence.module.notice.service.NoticeService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +30,8 @@ public class BidProjectServiceImpl implements BidProjectService {
 
     @Override
     public Long createBidProject(Long userId, BidProjectCreateReqVO reqVO) {
-        // 1) 读取源公告
-        NoticePortalDO notice = noticeService.getNotice(reqVO.getNoticeId());
+        // 1) 读取源公告（四层模型读路径）
+        NoticeRespVO notice = noticeService.getNotice(reqVO.getNoticeId());
 
         // 2) 防重复: 同一公告存在在办项目
         if (bidProjectMapper.selectActiveByUserAndNotice(userId, notice.getId()) != null) {
@@ -43,7 +43,7 @@ public class BidProjectServiceImpl implements BidProjectService {
         bidProject.setUserId(userId);
         bidProject.setNoticeId(notice.getId());
         bidProject.setProjectName(notice.getTitle());
-        bidProject.setDeadline(notice.getDeadline());
+        bidProject.setDeadline(notice.getBidDeadline());
         bidProject.setBidAmount(reqVO.getBidAmount());
         bidProject.setBidFileName(reqVO.getBidFileName());
         bidProject.setRemark(reqVO.getRemark());

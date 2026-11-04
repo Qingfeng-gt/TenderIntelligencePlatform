@@ -12,8 +12,7 @@ import com.tenderintelligence.module.notice.api.notice.dto.NoticeUpsertRespDTO;
  * <p><b>契约状态：第 1 周末冻结，冻结后只加不改。</b>
  * 变更必须同步乙、丁、戊，并登记到 doc/毕设 §5 接口契约表。
  *
- * <p>⚠️ 本接口<b>只定签名、暂不提供实现</b>（插槽阶段）。消费方先在自己模块里写 mock 实现，
- * 第 4 周由丙提供真实现。
+ * <p>实现类：{@link NoticeApiImpl}。
  *
  * @author Tender Intelligence
  */
@@ -52,7 +51,7 @@ public interface NoticeApi {
     /**
      * 按 {@code sourceUrl} 去重入库：不存在则新增，存在且关键字段有变则更新，无变化则不动
      *
-     * <p>这是乙的 {@code NoticeUpsertService} 的接口化形式。语义必须与现状保持一致：
+     * <p>这是采集写链路的唯一入口，由 {@code NoticeIngestionService} 实现。语义：
      * <ul>
      *   <li>去重键是 {@code sourceUrl}</li>
      *   <li>变更比对只覆盖会被源站改写的字段（标题 / 截止 / 预算 / 正文 / 省市 / 行业），

@@ -2,11 +2,15 @@ package com.tenderintelligence.module.crawler.service.adapter.ccgp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerChannelDO;
 import com.tenderintelligence.module.crawler.dal.dataobject.CrawlerSiteDO;
+import com.tenderintelligence.module.crawler.dal.mysql.CrawlerChannelMapper;
 import com.tenderintelligence.module.crawler.service.CrawlStats;
-import com.tenderintelligence.module.crawler.service.NoticeUpsertService;
+import com.tenderintelligence.module.crawler.service.CrawlTelemetryService;
 import com.tenderintelligence.module.crawler.service.adapter.SourceAdapter;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.NoticeApi;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeUpsertRespDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +21,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,7 +56,11 @@ public class CcgpSourceAdapter implements SourceAdapter {
     private static final String TEMPLATE_ZYGG = "zygg";
 
     @Resource
-    private NoticeUpsertService noticeUpsertService;
+    private NoticeApi noticeApi;
+    @Resource
+    private CrawlerChannelMapper crawlerChannelMapper;
+    @Resource
+    private CrawlTelemetryService crawlTelemetryService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -84,28 +91,43 @@ public class CcgpSourceAdapter implements SourceAdapter {
         fetch(client, initialUrl, ua, referer);
         log.info("[crawler] ccgp 会话初始化完成: {}", initialUrl);
 
-        // 3) 频道循环(JSON: [{path,name,type,pageCount}])
-        List<ChannelDef> channels = parseChannels(site.getChannels());
-        for (ChannelDef channel : channels) {
+        // 3) 频道循环（crawler_channel 表，替代旧 crawler_site.channels JSON）
+        List<CrawlerChannelDO> channels = crawlerChannelMapper.selectEnabledBySiteCode(site.getCode());
+        if (channels.isEmpty()) {
+            throw new IllegalStateException("ccgp 未配置任何启用频道(crawler_channel)");
+        }
+        for (CrawlerChannelDO channel : channels) {
+            String channelPath = channel.getPath();
+            String channelType = firstNonBlank(channel.getNoticeTypeCode(), "tender");
+            int pageCount = channel.getPageCount() == null ? 1 : Math.max(1, channel.getPageCount());
+            String template = channelTemplate(channel);
             Set<String> candidateUrls = new LinkedHashSet<>();
-            for (int page = 1; page <= channel.pageCount; page++) {
-                String listUrl = baseUrl + channel.path + (page == 1 ? "" : "index_" + page + ".htm");
+            for (int page = 1; page <= pageCount; page++) {
+                String listUrl = baseUrl + channelPath + (page == 1 ? "" : "index_" + page + ".htm");
+                long start = System.currentTimeMillis();
                 String listHtml = fetch(client, listUrl, ua, referer);
+                long cost = System.currentTimeMillis() - start;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channelPath, "LIST",
+                        listUrl, listHtml == null ? null : 200, cost, 0,
+                        listHtml == null ? "FAILED" : "SUCCESS",
+                        listHtml == null ? "FETCH_FAILED" : "", "");
                 if (listHtml == null) {
                     log.warn("[crawler] 列表页抓取失败: {}", listUrl);
                     continue;
                 }
+                crawlTelemetryService.recordRaw(stats.getTaskId(), site.getCode(), listUrl, "LIST",
+                        listHtml, "CRAWL-V2", "PARSED");
                 stats.setListFetched(stats.getListFetched() + 1);
                 Matcher matcher = LIST_ITEM.matcher(listHtml);
                 int parsed = 0;
                 while (matcher.find()) {
                     // 相对路径解析: ./202609/t*.htm → baseUrl + channelPath + 202609/t*.htm
-                    candidateUrls.add(baseUrl + channel.path + matcher.group(1).substring(2));
+                    candidateUrls.add(baseUrl + channelPath + matcher.group(1).substring(2));
                     parsed++;
                 }
                 stats.setListParsed(stats.getListParsed() + parsed);
                 referer = listUrl;
-                log.info("[crawler] 频道 {} 第{}页, 解析出 {} 条公告", channel.path, page, parsed);
+                log.info("[crawler] 频道 {} 第{}页, 解析出 {} 条公告", channelPath, page, parsed);
             }
 
             // 4) 详情页逐条抓取+解析+入库
@@ -115,35 +137,65 @@ public class CcgpSourceAdapter implements SourceAdapter {
                 if (fetched > 0) {
                     Thread.sleep(intervalMs);
                 }
+                long start = System.currentTimeMillis();
                 String detailHtml = fetch(client, detailUrl, ua, referer);
+                long cost = System.currentTimeMillis() - start;
+                crawlTelemetryService.recordFetch(stats.getTaskId(), site.getCode(), channelPath, "DETAIL",
+                        detailUrl, detailHtml == null ? null : 200, cost, 0,
+                        detailHtml == null ? "FAILED" : "SUCCESS",
+                        detailHtml == null ? "FETCH_FAILED" : "", "");
                 if (detailHtml == null) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     continue;
                 }
+                crawlTelemetryService.recordRaw(stats.getTaskId(), site.getCode(), detailUrl, "DETAIL",
+                        detailHtml, "CRAWL-V2", "PARSED");
                 fetched++;
                 // 解析与入库分两段捕获: 两者的排查方向完全不同(字段锚点 vs 表结构/约束),
                 // 合成一条"解析失败"日志会把库层错误(如 Data too long)误报成解析问题。
-                NoticePortalDO notice;
+                NoticeDTO notice;
                 try {
                     // 两个分组的详情页模板不同: 地方公告见 CcgpNoticeParser, 中央公告见 CcgpZyggNoticeParser
-                    notice = TEMPLATE_ZYGG.equals(channel.template)
-                            ? CcgpZyggNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName())
-                            : CcgpNoticeParser.parse(detailHtml, channel.type, detailUrl, site.getName());
+                    notice = TEMPLATE_ZYGG.equals(template)
+                            ? CcgpZyggNoticeParser.parse(detailHtml, channelType, detailUrl, site.getName())
+                            : CcgpNoticeParser.parse(detailHtml, channelType, detailUrl, site.getName());
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     log.warn("[crawler] 解析失败 {}: [{}] {}", detailUrl, ex.getClass().getSimpleName(), ex.getMessage());
                     continue;
                 }
                 try {
-                    noticeUpsertService.upsert(notice, stats);
+                    NoticeUpsertRespDTO result = noticeApi.upsert(notice);
+                    if (Boolean.TRUE.equals(result.getCreated())) {
+                        stats.setNewInsert(stats.getNewInsert() + 1);
+                    } else if (Boolean.TRUE.equals(result.getUpdated())) {
+                        stats.setUpdated(stats.getUpdated() + 1);
+                    }
                 } catch (Exception ex) {
                     stats.setDetailFailed(stats.getDetailFailed() + 1);
                     log.warn("[crawler] 入库失败 {}: [{}] {}", detailUrl, ex.getClass().getSimpleName(), ex.getMessage());
                 }
             }
             stats.setDetailFetched(stats.getDetailFetched() + fetched);
-            log.info("[crawler] 频道 {} 完成: 详情{}条/失败{}条", channel.path, fetched, stats.getDetailFailed());
+            log.info("[crawler] 频道 {} 完成: 详情{}条/失败{}条", channelPath, fetched, stats.getDetailFailed());
         }
+    }
+
+    private String channelTemplate(CrawlerChannelDO channel) {
+        if (channel.getConfig() == null || channel.getConfig().isBlank()) {
+            return TEMPLATE_DFGG;
+        }
+        try {
+            JsonNode config = objectMapper.readTree(channel.getConfig());
+            return config.has("template") ? config.get("template").asText() : TEMPLATE_DFGG;
+        } catch (Exception ex) {
+            log.warn("[crawler] 频道 {} config 解析失败: {}", channel.getPath(), ex.getMessage());
+            return TEMPLATE_DFGG;
+        }
+    }
+
+    private static String firstNonBlank(String first, String fallback) {
+        return first != null && !first.isBlank() ? first : fallback;
     }
 
     /**
@@ -204,38 +256,4 @@ public class CcgpSourceAdapter implements SourceAdapter {
         }
     }
 
-    private List<ChannelDef> parseChannels(String json) {
-        List<ChannelDef> result = new ArrayList<>();
-        try {
-            JsonNode array = objectMapper.readTree(json != null ? json : "[]");
-            for (JsonNode node : array) {
-                ChannelDef def = new ChannelDef();
-                def.path = node.get("path").asText();
-                def.type = node.has("type") ? node.get("type").asText() : "tender";
-                def.pageCount = node.has("pageCount") ? node.get("pageCount").asInt(1) : 1;
-                def.template = node.has("template") ? node.get("template").asText() : TEMPLATE_DFGG;
-                result.add(def);
-            }
-        } catch (Exception ex) {
-            log.warn("[crawler] channels 配置解析失败: {}", ex.getMessage());
-        }
-        if (result.isEmpty()) {
-            // 兜底: 默认公开招标频道
-            ChannelDef def = new ChannelDef();
-            def.path = "/cggg/dfgg/gkzb/";
-            def.type = "tender";
-            def.pageCount = 1;
-            result.add(def);
-        }
-        return result;
-    }
-
-    /** 频道配置 */
-    private static class ChannelDef {
-        private String path;
-        private String type;
-        private int pageCount;
-        /** 详情页模板(dfgg/zygg), 决定用哪个解析器, 见 crawler_site.channels */
-        private String template;
-    }
 }

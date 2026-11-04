@@ -1,5 +1,5 @@
 import request from './request'
-import type { Notice, NoticeQuery, PageResult, HomeStat, HotTag } from '@/types'
+import type { Notice, NoticeQuery, PageResult, HomeStat, HotTag, RegionOption } from '@/types'
 
 /** 本地热门关键词(后端暂无接口,后续由搜索统计生成) */
 const hotTags: HotTag[] = [
@@ -25,44 +25,42 @@ function toTimeParam(r?: '' | 'today' | 'week' | 'month'): string | undefined {
   return fmt(new Date(now.getTime() - 30 * 24 * 3600 * 1000))
 }
 
+/** 分页查询公告(四层模型) */
 export function listNotices(query: NoticeQuery): Promise<PageResult<Notice>> {
   return request({
-    url: '/notice/list',
+    url: '/notice/page',
     method: 'get',
     params: {
       pageNo: query.page ?? 1,
       pageSize: query.pageSize ?? 10,
       keyword: query.keyword || undefined,
-      type: query.type || undefined,
-      province: query.province || undefined,
+      noticeTypeCode: query.noticeTypeCode || undefined,
+      provinceCode: query.provinceCode || undefined,
+      cityCode: query.cityCode || undefined,
       industry: query.industry || undefined,
       publishTimeGreaterThan: toTimeParam(query.timeRange)
     }
   })
 }
 
+/** 公告详情(含附件、澄清修改、关联企业) */
 export function getNoticeDetail(id: number): Promise<Notice> {
-  return request({ url: '/notice/get', method: 'get', params: { id } })
+  return request({ url: '/notice/detail', method: 'get', params: { id } })
 }
 
+/** 首页统计 */
 export function getHomeStat(): Promise<HomeStat> {
-  return request({ url: '/notice/stats', method: 'get' })
+  return request({ url: '/notice/overview', method: 'get' })
 }
 
-/**
- * 行业列表
- *
- * 必须与后端 NoticeRegionExtractor.INDUSTRY_KEYWORDS 的分类名逐一对应 —— notice.industry
- * 由该词典推导, 后端查询是精确相等匹配。此前本列表含「智慧城市/科研设备/机关团体」(仅种子
- * 数据用过, 推导器从不产出), 却缺「教育/工业设备/交通公路」(推导器会产出), 导致这三类
- * 实际数据在筛选里选不到。
- *
- * TODO: 待后端提供行业字典接口后改为动态获取(字典在代码里, 前端硬编码会再次漂移)。
- */
-const industries = ['医疗卫生', '市政工程', '软件服务', '轨道交通', '交通公路', '教育', '农业水利', '新能源', '生态环保', '建筑工程', '通信工程', '能源化工', '公共安全', '工业设备', '咨询服务', '其他']
+/** 省级行政区划(来自 base_area) */
+export function getProvinces(): Promise<RegionOption[]> {
+  return request({ url: '/notice/provinces', method: 'get' })
+}
 
-export function getAllIndustries(): string[] {
-  return [...industries]
+/** 行业选项(来自已有公告的规则抽取结果) */
+export function getIndustries(): Promise<string[]> {
+  return request({ url: '/notice/industries', method: 'get' })
 }
 
 export { hotTags }

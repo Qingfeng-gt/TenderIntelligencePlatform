@@ -110,7 +110,7 @@ mysql -uroot -p tender < P0-5__compat_check.sql
 | 项目归并 | P0 回填按 `SHA256(项目编号或标题 | region_code | 项目编号)` 生成 `project_key`；跨源站同一项目的精确归并、人工合并要等 `crawl_merge_log` 接入后完善。 |
 | 标段 | 旧数据没有标段信息，统一生成 `lot_no='DEFAULT'` 的默认标段；真实多标段要等解析器接入。 |
 | 企业回填 | 只从 `tender_person` / `agency` 抽名称；不解析联系人、不做信用代码补全；同名不同主体需人工合并。 |
-| 采集链路 | 已接入 `NoticeModelSyncService`：采集入库后自动补齐 project/tender_project/tender_lot/enterprise 与新列；`crawl_raw` / `crawler_fetch_log` 尚未由采集代码写入。 |
+| 采集链路 | 已切到 `NoticeApi.upsert(NoticeDTO)` → `NoticeIngestionService`：直接写 notice 新列、project/tender_project/tender_lot、enterprise*、notice_quality、crawl_merge_log；`crawl_raw` / `crawler_fetch_log` 由 `CrawlTelemetryService` 写入；频道改读 `crawler_channel`。 |
 | 全文索引 | `notice` 的 ngram 全文索引未包含在本批脚本中；需要时单独加，避免 ngram 插件缺失导致整批失败。 |
 | 排序规则 | 新表**跟随数据库默认 collation**。当前 `tender` 库是 `utf8mb4_0900_ai_ci`；脚本不要显式写 `utf8mb4_unicode_ci`，否则与旧 `notice` 比较时报 `ERROR 1267 Illegal mix of collations`。 |
 
@@ -146,13 +146,13 @@ mysql -uroot -p tender < P0-5__compat_check.sql
 
 ## 八、下一步
 
-P0 数据地基已完成，写入侧已接入。剩余：
+P0 数据地基已完成，写入侧已接入，读路径已整体切换。剩余：
 
-1. **领域模块拆分**：`base` / `enterprise` / `tender` 的 DO/Mapper/Service（当前用 `NoticeModelSyncService` 的 JdbcTemplate 兼容层）；
-2. **采集治理代码**：`crawl_raw` / `crawler_fetch_log` 写入、`crawler_channel` 读取替换 `channels` JSON；
-3. **project-centric 新读接口**；
-4. **前端逐页切换**；
-5. **停跑回填、删旧列**。
+1. ~~**领域模块拆分**~~ **已完成**：`ProjectDO` / `TenderProjectDO` / `TenderLotDO` / `EnterpriseDO` / `NoticeEnterpriseDO` / `NoticeChangeDO` / `BaseAreaDO` / `BaseCodeDO` 及对应 Mapper/Service 已落在 `tender-module-notice`；旧扁平接口 `/notice/list`、`/notice/get`、`/notice/stats` 已删除，不保留兼容。
+2. ~~**采集治理代码**~~ **已完成**：频道改读 `crawler_channel`；适配器经 `NoticeApi.upsert(NoticeDTO)` 入库，由 `NoticeIngestionService` 直接写 notice 新列 + 四层模型 + 企业 + `notice_quality` + `crawl_merge_log`；新增 `crawl_raw` / `crawler_fetch_log` 写入；旧 `NoticeUpsertService` / `NoticeModelSyncService` 已删除；
+3. ~~**project-centric 新读接口**~~ **已完成**：`/notice/project/page`、`/notice/project/detail`；
+4. ~~**前端逐页切换**~~ **已完成**：`user-web` 首页/列表/详情全部改调 `/notice/page`、`/notice/detail`、`/notice/overview`；筛选项改为 `/notice/provinces`、`/notice/industries`；
+5. **停跑回填、删旧列**（旧列仍由采集写入，读路径已不再依赖）。
 
 切换与回滚细节见 `P0-5__compat_runbook.md`。
 
@@ -170,4 +170,4 @@ P0 数据地基已完成，写入侧已接入。剩余：
 | `notice_enterprise` | 832 条（TENDERER / AGENCY） |
 | `crawler_channel` | 35 条（ccgp 22 / ggzy 10 / ztb_gz 3） |
 | 代码编译 | `mvn -o -DskipTests -pl tender-module-crawler -am compile` 通过 |
-| 已知缺口 | `city_code` 仍有约 496 条为空（缺全量 GB/T 2260 地市数据）；`crawl_raw` / `crawler_fetch_log` 尚未由采集代码写入 |
+| 已知缺口 | `city_code` 仍有约 496 条为空（缺全量 GB/T 2260 地市数据）；`crawl_raw` / `crawler_fetch_log` 从 2026-11-03 起已由采集代码写入 |

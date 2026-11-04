@@ -3,8 +3,8 @@ package com.tenderintelligence.module.crawler.service.adapter.ggzy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.tenderintelligence.module.crawler.service.AttachmentSupport;
 import com.tenderintelligence.module.crawler.service.NoticeRegionExtractor;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticeAttachmentDO;
-import com.tenderintelligence.module.notice.dal.dataobject.NoticePortalDO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeAttachmentDTO;
+import com.tenderintelligence.module.notice.api.notice.dto.NoticeDTO;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -114,8 +114,8 @@ public final class GgzyNoticeParser {
      * @param sourceUrl 正文页 URL(唯一去重键)
      * @param source    来源网站名称
      */
-    public static NoticePortalDO parse(JsonNode record, String html, String fallback, String sourceUrl, String source) {
-        NoticePortalDO notice = new NoticePortalDO();
+    public static NoticeDTO parse(JsonNode record, String html, String fallback, String sourceUrl, String source) {
+        NoticeDTO notice = new NoticeDTO();
         notice.setSourceUrl(sourceUrl);
         notice.setSource(source);
 
@@ -237,8 +237,8 @@ public final class GgzyNoticeParser {
      * 各省级交易平台, 无统一附件区块。故只能保守判定: **href 或锚文本以白名单扩展名结尾**才算附件
      * (白名单见 {@link AttachmentSupport}), 其余一律丢弃, 宁可漏收也不能把普通链接当附件。
      */
-    private static List<NoticeAttachmentDO> parseAttachments(String content, String sourceUrl) {
-        List<NoticeAttachmentDO> attachments = new ArrayList<>();
+    private static List<NoticeAttachmentDTO> parseAttachments(String content, String sourceUrl) {
+        List<NoticeAttachmentDTO> attachments = new ArrayList<>();
         if (content == null || content.isEmpty()) {
             return attachments;
         }
@@ -265,7 +265,7 @@ public final class GgzyNoticeParser {
             if (!seenUrls.add(url)) {
                 continue;
             }
-            NoticeAttachmentDO attachment = new NoticeAttachmentDO();
+            NoticeAttachmentDTO attachment = new NoticeAttachmentDTO();
             String fileName = anchorText == null || anchorText.isBlank()
                     ? AttachmentSupport.fileNameFromUrl(url) : anchorText;
             attachment.setFileName(AttachmentSupport.truncate(fileName, AttachmentSupport.MAX_NAME_LENGTH));

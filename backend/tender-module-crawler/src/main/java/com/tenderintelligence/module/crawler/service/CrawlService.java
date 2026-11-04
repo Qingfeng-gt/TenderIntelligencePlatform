@@ -18,6 +18,11 @@ public interface CrawlService {
     Long run(String siteCode);
 
     /**
+     * 执行一次采集，并显式指定触发方式（MANUAL/SCHEDULE/RETRY）
+     */
+    Long run(String siteCode, String triggerType);
+
+    /**
      * 查询站点列表
      */
     List<CrawlerSiteDO> getSiteList();

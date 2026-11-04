@@ -7,6 +7,8 @@
 -- 幂等: 是。按 name_hash 去重；角色按 (enterprise_id, role_code) upsert。
 -- 边界: 只回填企业主档与角色；notice_enterprise 关联、联系人抽取在 P0-3。
 -- 清理: P0-2__enterprise_backfill_cleanup.sql（仅回滚回填数据时使用）
+-- ⚠️ 本脚本读取旧列（notice.tender_person / notice.agency），
+--    只能在 P0-6__drop_legacy_columns.sql 之前执行。
 -- ============================================================
 
 SET NAMES utf8mb4;

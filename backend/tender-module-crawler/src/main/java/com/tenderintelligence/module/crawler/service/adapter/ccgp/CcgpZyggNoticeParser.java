@@ -61,9 +61,9 @@ public final class CcgpZyggNoticeParser {
      */
     public static NoticeDTO parse(String html, String type, String sourceUrl, String source) {
         NoticeDTO notice = new NoticeDTO();
-        notice.setType(type);
+        notice.setNoticeTypeCode(type);
         notice.setSourceUrl(sourceUrl);
-        notice.setSource(source);
+        notice.setSourcePlatform(source);
 
         // 1) 正文片段(与 dfgg 共用切取逻辑: vF_deail_maincontent → 推荐位前)
         String content = CcgpHtmlSupport.extractContent(html);
@@ -86,15 +86,15 @@ public final class CcgpZyggNoticeParser {
         String projectNo = CcgpHtmlSupport.first(CcgpHtmlSupport.PROJECT_NO, content);
         notice.setProjectNo(CcgpHtmlSupport.clean(projectNo != null ? projectNo : fields.get("项目编号")));
         notice.setBudget(resolveBudget(fields));
-        notice.setTenderPerson(fields.get(LABEL_PURCHASER));
-        notice.setAgency(fields.get(LABEL_AGENCY));
+        notice.setTendererName(fields.get(LABEL_PURCHASER));
+        notice.setAgencyName(fields.get(LABEL_AGENCY));
         notice.setContact(fields.get(LABEL_CONTACT));
         notice.setContactPhone(fields.get(LABEL_PHONE));
 
         // 5) 开标时间(中央公告同口径: 开标时间=投标截止)
         String openTimeText = firstLabel(fields, OPEN_TIME_LABELS);
         LocalDateTime openTime = CcgpHtmlSupport.parseFullDateTime(openTimeText);
-        notice.setDeadline(openTime);
+        notice.setBidDeadline(openTime);
         notice.setOpenTime(openTime);
 
         // 6) 发布时间(表格"公告时间"; 缺失时兜底取当前时间, 与 dfgg 同策略)
@@ -104,8 +104,8 @@ public final class CcgpZyggNoticeParser {
         // 7) 地区/行业(规则提取, 公共词典)
         String detectSource = notice.getTitle() + " " + NoticeRegionExtractor.toPlainText(content);
         String[] region = NoticeRegionExtractor.extractRegion(detectSource);
-        notice.setProvince(region[0]);
-        notice.setCity(region[1]);
+        notice.setProvinceName(region[0]);
+        notice.setCityName(region[1]);
         notice.setIndustry(NoticeRegionExtractor.detectIndustry(detectSource));
 
         return notice;

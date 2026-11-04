@@ -69,11 +69,7 @@ public class NoticeServiceImpl implements NoticeService {
         NoticeStatsRespVO stats = new NoticeStatsRespVO();
         stats.setTodayCount(noticePortalMapper.selectCountByPublishTime(LocalDate.now().atStartOfDay()));
         stats.setTotalCount(noticePortalMapper.selectTotalCount());
-        Long provinceCount = noticePortalMapper.selectProvinceCodeCount();
-        if (provinceCount == null || provinceCount == 0) {
-            provinceCount = noticePortalMapper.selectProvinceCount();
-        }
-        stats.setProvinces(provinceCount);
+        stats.setProvinces(noticePortalMapper.selectProvinceCodeCount());
         stats.setIndustries(noticePortalMapper.selectIndustryCount());
         stats.setProjects(projectMapper.selectTotalCount());
         return stats;

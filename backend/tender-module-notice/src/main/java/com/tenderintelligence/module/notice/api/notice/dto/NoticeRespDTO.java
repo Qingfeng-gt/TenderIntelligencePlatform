@@ -67,25 +67,12 @@ public class NoticeRespDTO {
     private String projectNo;
 
     /**
-     * 公告类型：tender / win / change / explore
-     */
-    private String type;
-
-    /**
-     * 省份
-     */
-    private String province;
-
-    /**
-     * 城市
-     */
-    private String city;
-
-    /**
-     * 行业。⚠️ 这是 crawler 的规则抽取结果，不是权威标签——见
-     * {@link NoticeQueryDTO#getIndustry()} 的说明
+     * 行业（规则抽取结果，非权威标签）
      */
     private String industry;
+
+    /** 行业代码（国标，当前多数为空） */
+    private String industryCode;
 
     /**
      * 行政区划码
@@ -96,16 +83,6 @@ public class NoticeRespDTO {
      * 预算金额（万元）
      */
     private BigDecimal budget;
-
-    /**
-     * 招标人 / 采购人
-     */
-    private String tenderPerson;
-
-    /**
-     * 代理机构
-     */
-    private String agency;
 
     /**
      * 联系人
@@ -123,9 +100,9 @@ public class NoticeRespDTO {
     private String content;
 
     /**
-     * 来源网站标识
+     * 来源平台名称
      */
-    private String source;
+    private String sourcePlatform;
 
     /**
      * 源站详情 URL（唯一去重键）
@@ -136,11 +113,6 @@ public class NoticeRespDTO {
      * 发布时间
      */
     private LocalDateTime publishTime;
-
-    /**
-     * 报名 / 投标截止时间
-     */
-    private LocalDateTime deadline;
 
     /**
      * 开标时间

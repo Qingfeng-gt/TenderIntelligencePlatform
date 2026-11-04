@@ -4,7 +4,7 @@
 -- 前置: P0-1__base_data.sql、P0-2__enterprise.sql
 -- 作用:
 --   1) 新建 project / tender_project / tender_lot / notice_change / notice_enterprise
---   2) 扩展 notice（新增国标字段；旧列保留）
+--   2) 扩展 notice（新增国标字段；旧列在 P0-6 删除）
 --   3) 扩展 notice_attachment（附件分类/售价/获取方式等）
 -- 特性: 只增不改；建表与扩展均为幂等（扩展以哨兵列判断）
 -- 回滚: P0-3__tender_model_rollback.sql
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS `notice_enterprise` (
 
 -- ------------------------------------------------------------
 -- 6) 扩展 notice（哨兵列 project_id）
---    说明：旧列全部保留；新列可空/带默认，不阻塞旧读写。
+--    说明：本脚本只加新列；旧列由 P0-6 在回填完成后删除。
 -- ------------------------------------------------------------
 DROP PROCEDURE IF EXISTS `p0_extend_notice`;
 DELIMITER $$

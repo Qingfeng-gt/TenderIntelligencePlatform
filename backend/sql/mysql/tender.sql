@@ -5,7 +5,7 @@
  Source Server Type    : MySQL
  Source Server Version : 80200 (8.2.0)
  Source Host           : 127.0.0.1:3306
- Source Schema         : ruoyi-vue-pro
+ Source Schema         : tender
 
  Target Server Type    : MySQL
  Target Server Version : 80200 (8.2.0)
@@ -13,6 +13,10 @@
 
  Date: 04/09/2026 08:44:59
 */
+
+-- 本项目固定使用 tender 库；脚本自包含建库，避免落在 mysql 客户端的默认库。
+CREATE DATABASE IF NOT EXISTS `tender` DEFAULT CHARACTER SET utf8mb4;
+USE `tender`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

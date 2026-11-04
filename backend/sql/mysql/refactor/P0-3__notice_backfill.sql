@@ -11,6 +11,8 @@
 --       企业关联按唯一键 (notice_id, enterprise_id, role_code)。
 -- 清理: P0-3__notice_backfill_cleanup.sql
 -- 校验: P0-3__notice_validate.sql
+-- ⚠️ 本脚本读取旧列（type/deadline/source/province/city/tender_person/agency），
+--    只能在 P0-6__drop_legacy_columns.sql 之前执行。
 -- ============================================================
 
 SET NAMES utf8mb4;

@@ -50,10 +50,10 @@ WHERE `deleted` = b'0'
 GROUP BY `role_code`;
 
 -- 6) 地区代码未匹配的公告（抽样，便于补 base_area）
-SELECT `province`, `city`, COUNT(*) AS `cnt`
+SELECT `province_code`, `city_code`, COUNT(*) AS `cnt`
 FROM `notice`
 WHERE `deleted` = b'0' AND (`province_code` = '' OR `city_code` = '')
-GROUP BY `province`, `city`
+GROUP BY `province_code`, `city_code`
 ORDER BY `cnt` DESC;
 
 -- 7) 公告 → 项目 → 招标项目 → 标段 抽样
@@ -74,16 +74,14 @@ WHERE `n`.`deleted` = b'0'
 ORDER BY `n`.`id`
 LIMIT 50;
 
--- 8) 公告原文有企业名但未建立关联（抽样）
+-- 8) 企业关联缺失的公告（抽样）
 SELECT
   `n`.`id` AS `notice_id`,
-  `n`.`tender_person`,
-  `n`.`agency`
+  `n`.`title`,
+  `n`.`tenderer_enterprise_id`,
+  `n`.`agency_enterprise_id`
 FROM `notice` `n`
 WHERE `n`.`deleted` = b'0'
-  AND (
-    (`n`.`tender_person` <> '' AND `n`.`tenderer_enterprise_id` IS NULL)
-    OR (`n`.`agency` <> '' AND `n`.`agency_enterprise_id` IS NULL)
-  )
+  AND (`n`.`tenderer_enterprise_id` IS NULL OR `n`.`agency_enterprise_id` IS NULL)
 ORDER BY `n`.`id`
 LIMIT 50;

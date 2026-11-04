@@ -39,35 +39,13 @@ public class NoticePortalDO extends BaseDO {
      */
     private String projectNo;
     /**
-     * 公告类型:tender 招标 / win 中标 / change 变更 / explore 采购
-     *
-     * 枚举 {@link com.tenderintelligence.module.notice.enums.NoticeTypeEnum}
-     */
-    private String type;
-    /**
-     * 省份
-     */
-    private String province;
-    /**
-     * 城市
-     */
-    private String city;
-    /**
-     * 行业
+     * 行业（规则抽取结果，非权威标签）
      */
     private String industry;
     /**
      * 预算金额(万元)
      */
     private BigDecimal budget;
-    /**
-     * 招标人 / 采购人
-     */
-    private String tenderPerson;
-    /**
-     * 代理机构
-     */
-    private String agency;
     /**
      * 联系人
      */
@@ -81,10 +59,6 @@ public class NoticePortalDO extends BaseDO {
      */
     private String content;
     /**
-     * 来源网站
-     */
-    private String source;
-    /**
      * 源站详情URL(唯一去重键)
      */
     private String sourceUrl;
@@ -93,15 +67,11 @@ public class NoticePortalDO extends BaseDO {
      */
     private LocalDateTime publishTime;
     /**
-     * 投标截止时间
-     */
-    private LocalDateTime deadline;
-    /**
      * 开标时间
      */
     private LocalDateTime openTime;
     /**
-     * 源站地区代码(如 610000)
+     * 行政区划代码
      */
     private String regionCode;
 

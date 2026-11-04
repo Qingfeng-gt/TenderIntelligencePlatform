@@ -6,7 +6,7 @@ UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Ge
 echo "=== MySQL databases ==="
 mysql -uroot -p123456 -N -e "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA" 2>/dev/null
 
-DB="ruoyi-vue-pro-jdk8"
+DB="${DB:-tender}"
 echo "=== tables in $DB (count) ==="
 mysql -uroot -p123456 -N "$DB" -e "SHOW TABLES" 2>/dev/null | wc -l
 echo "=== notice table count ==="

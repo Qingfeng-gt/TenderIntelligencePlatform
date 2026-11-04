@@ -11,8 +11,7 @@ import java.util.List;
  * 公告详情/列表响应（四层模型）
  *
  * <p>所有字段来自新模型：{@code notice} 新列 + {@code project} / {@code tender_project} /
- * {@code tender_lot} / {@code enterprise} / {@code base_area}。旧扁平列仅作为地区名、
- * 招标人/代理机构名的缺失兜底。
+ * {@code tender_lot} / {@code enterprise} / {@code base_area}。旧扁平列已删除，不再兜底。
  */
 @Schema(description = "管理后台 - 招投标公告 Response VO")
 @Data
@@ -71,7 +70,7 @@ public class NoticeRespVO {
 
     @Schema(description = "行业（规则抽取结果，非权威标签）")
     private String industry;
-    @Schema(description = "行业代码")
+    @Schema(description = "行业代码（国标，当前多数为空）")
     private String industryCode;
 
     @Schema(description = "预算金额（万元）")

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  * 公告/项目视图组装器
  *
  * <p>把四层模型拆开的主表一次性批量取回再组装，避免逐条查询（N+1）。
- * 旧扁平列只作为地区名、招标人/代理机构名的兜底，不再作为主要读源。
+ * 地区名来自 {@code base_area}，招标人/代理机构名来自 {@code enterprise}，不再读取旧的扁平列。
  */
 @Component
 public class NoticeViewAssembler {
@@ -143,8 +143,8 @@ public class NoticeViewAssembler {
 
             vo.setProvinceCode(notice.getProvinceCode());
             vo.setCityCode(notice.getCityCode());
-            vo.setProvinceName(areaName(areaMap.get(notice.getProvinceCode()), notice.getProvince()));
-            vo.setCityName(areaName(areaMap.get(notice.getCityCode()), notice.getCity()));
+            vo.setProvinceName(areaName(areaMap.get(notice.getProvinceCode()), null));
+            vo.setCityName(areaName(areaMap.get(notice.getCityCode()), null));
             vo.setIndustry(notice.getIndustry());
             vo.setIndustryCode(notice.getIndustryCode());
 
@@ -154,11 +154,9 @@ public class NoticeViewAssembler {
             vo.setWinAmount(notice.getWinAmount());
 
             vo.setTendererEnterpriseId(notice.getTendererEnterpriseId());
-            vo.setTendererName(firstNonBlank(enterpriseName(enterpriseMap, notice.getTendererEnterpriseId()),
-                    notice.getTenderPerson()));
+            vo.setTendererName(enterpriseName(enterpriseMap, notice.getTendererEnterpriseId()));
             vo.setAgencyEnterpriseId(notice.getAgencyEnterpriseId());
-            vo.setAgencyName(firstNonBlank(enterpriseName(enterpriseMap, notice.getAgencyEnterpriseId()),
-                    notice.getAgency()));
+            vo.setAgencyName(enterpriseName(enterpriseMap, notice.getAgencyEnterpriseId()));
             vo.setWinnerEnterpriseId(notice.getWinnerEnterpriseId());
             vo.setWinnerName(enterpriseName(enterpriseMap, notice.getWinnerEnterpriseId()));
 
@@ -166,7 +164,7 @@ public class NoticeViewAssembler {
             vo.setContactPhone(notice.getContactPhone());
             vo.setContent(withContent ? notice.getContent() : null);
             vo.setSourceSiteCode(notice.getSourceSiteCode());
-            vo.setSourcePlatform(firstNonBlank(notice.getSourcePlatform(), notice.getSource()));
+            vo.setSourcePlatform(notice.getSourcePlatform());
             vo.setSourceUrl(notice.getSourceUrl());
 
             vo.setPublishTime(notice.getPublishTime());

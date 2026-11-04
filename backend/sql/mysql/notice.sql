@@ -1,9 +1,12 @@
 -- =====================================================================
 -- 业务全量初始化(一次性):标讯 + 爬虫采集 + 用户投标
--- 执行方式: mysql -uroot -p tender < notice.sql   (须在 tender.sql 之后执行)
+-- 执行方式: mysql -uroot -p < notice.sql   (须在 tender.sql 之后；本脚本会自动 USE tender)
 -- 模式: DROP + CREATE 全量重建(同 tender.sql),无增量/演进片段;仅用于初始化
 -- 由原 notice.sql + demo-crawler-bid.sql + demo-crawler-bid-seed.sql + demo-crawler-admin.sql 合并
 -- =====================================================================
+
+-- 与 tender.sql 一致，固定落到 tender 库。
+USE `tender`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

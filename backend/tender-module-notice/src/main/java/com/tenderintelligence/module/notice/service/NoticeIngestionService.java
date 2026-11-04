@@ -46,7 +46,7 @@ import java.util.Objects;
  *
  * <p>一次 {@link #upsert(NoticeDTO)} 完成：
  * <ol>
- *   <li>{@code notice} 按 {@code source_url} 去重写入（旧列 + P0 国标列）；</li>
+ *   <li>{@code notice} 按 {@code source_url} 去重写入（仅写 P0 国标列）；</li>
  *   <li>确保 {@code project} / {@code tender_project} / {@code tender_lot} 四层骨架；</li>
  *   <li>确保 {@code enterprise} / {@code enterprise_role} / {@code notice_enterprise} 主体关联；</li>
  *   <li>写入 {@code notice_quality} 缺失字段与 {@code crawl_merge_log} 归并记录。</li>
@@ -95,6 +95,7 @@ public class NoticeIngestionService {
             throw new IllegalArgumentException("sourceUrl 不能为空");
         }
         NoticePortalDO existing = noticePortalMapper.selectBySourceUrl(dto.getSourceUrl());
+        RegionCodes region = resolveRegion(dto);
         boolean created = false;
         boolean updated = false;
         NoticePortalDO notice;
@@ -106,7 +107,7 @@ public class NoticeIngestionService {
             created = true;
         } else {
             notice = existing;
-            if (isChanged(existing, dto)) {
+            if (isChanged(existing, dto, region)) {
                 applyDto(dto, notice);
                 notice.setUpdateTime(LocalDateTime.now());
                 noticePortalMapper.updateById(notice);
@@ -119,7 +120,7 @@ public class NoticeIngestionService {
         boolean modelIncomplete = notice.getProjectId() == null
                 || notice.getTenderProjectId() == null || notice.getLotId() == null;
         if (created || updated || modelIncomplete) {
-            syncModel(notice, dto);
+            syncModel(notice, dto, region);
         }
         return new NoticeUpsertRespDTO(notice.getId(), created, updated);
     }
@@ -128,10 +129,9 @@ public class NoticeIngestionService {
     // 四层模型同步
     // ------------------------------------------------------------------
 
-    private void syncModel(NoticePortalDO notice, NoticeDTO dto) {
-        RegionCodes region = resolveRegion(dto);
-        Long tendererId = ensureEnterprise(dto.getTenderPerson(), "TENDERER", notice.getId(), dto.getSourceUrl());
-        Long agencyId = ensureEnterprise(dto.getAgency(), "AGENCY", notice.getId(), dto.getSourceUrl());
+    private void syncModel(NoticePortalDO notice, NoticeDTO dto, RegionCodes region) {
+        Long tendererId = ensureEnterprise(dto.getTendererName(), "TENDERER", notice.getId(), dto.getSourceUrl());
+        Long agencyId = ensureEnterprise(dto.getAgencyName(), "AGENCY", notice.getId(), dto.getSourceUrl());
 
         ProjectDO project = ensureProject(notice, dto, region, tendererId, agencyId);
         Long projectId = project == null ? null : project.getId();
@@ -139,8 +139,8 @@ public class NoticeIngestionService {
         Long tenderProjectId = tenderProject == null ? null : tenderProject.getId();
         TenderLotDO lot = ensureLot(notice, dto, projectId, tenderProjectId, region);
 
-        linkEnterprise(notice.getId(), tendererId, "TENDERER", dto.getTenderPerson());
-        linkEnterprise(notice.getId(), agencyId, "AGENCY", dto.getAgency());
+        linkEnterprise(notice.getId(), tendererId, "TENDERER", dto.getTendererName());
+        linkEnterprise(notice.getId(), agencyId, "AGENCY", dto.getAgencyName());
 
         updateNoticeNewColumns(notice, dto, region, projectId, tenderProjectId,
                 lot == null ? null : lot.getId(), tendererId, agencyId);
@@ -422,22 +422,22 @@ public class NoticeIngestionService {
         notice.setProjectId(projectId);
         notice.setTenderProjectId(tenderProjectId);
         notice.setLotId(lotId);
-        notice.setNoticeTypeCode(firstNonBlank(dto.getType(), notice.getNoticeTypeCode(), "tender"));
+        notice.setNoticeTypeCode(firstNonBlank(dto.getNoticeTypeCode(), notice.getNoticeTypeCode(), "tender"));
         notice.setNoticeSubtypeCode(firstNonBlank(dto.getNoticeSubtypeCode(), notice.getNoticeSubtypeCode()));
         notice.setTenderProjectNo(firstNonBlank(dto.getTenderProjectNo(), dto.getProjectNo(),
                 notice.getTenderProjectNo()));
         notice.setLotNo(firstNonBlank(dto.getLotNo(), notice.getLotNo(), DEFAULT_LOT_NO));
         notice.setNoticeNo(firstNonBlank(dto.getNoticeNo(), dto.getProjectNo(), notice.getNoticeNo()));
         notice.setUnifiedDealCode(firstNonBlank(dto.getUnifiedDealCode(), notice.getUnifiedDealCode()));
-        notice.setSourceSiteCode(firstNonBlank(dto.getSourceSiteCode(), mapSourceSite(dto.getSource()),
+        notice.setSourceSiteCode(firstNonBlank(dto.getSourceSiteCode(), mapSourceSite(dto.getSourcePlatform()),
                 notice.getSourceSiteCode()));
-        notice.setSourcePlatform(firstNonBlank(dto.getSourcePlatform(), dto.getSource(),
+        notice.setSourcePlatform(firstNonBlank(dto.getSourcePlatform(),
                 notice.getSourcePlatform()));
         notice.setFileGetStartTime(firstNonNull(dto.getFileGetStartTime(), notice.getFileGetStartTime()));
         notice.setFileGetEndTime(firstNonNull(dto.getFileGetEndTime(), notice.getFileGetEndTime()));
         notice.setQaDeadline(firstNonNull(dto.getQaDeadline(), notice.getQaDeadline()));
         notice.setSignDeadline(firstNonNull(dto.getSignDeadline(), notice.getSignDeadline()));
-        notice.setBidDeadline(firstNonNull(dto.getBidDeadline(), dto.getDeadline(), notice.getBidDeadline()));
+        notice.setBidDeadline(firstNonNull(dto.getBidDeadline(), notice.getBidDeadline()));
         notice.setOpenPlace(firstNonBlank(dto.getOpenPlace(), notice.getOpenPlace()));
         notice.setPublicityStartTime(firstNonNull(dto.getPublicityStartTime(), notice.getPublicityStartTime()));
         notice.setPublicityEndTime(firstNonNull(dto.getPublicityEndTime(), notice.getPublicityEndTime()));
@@ -558,44 +558,42 @@ public class NoticeIngestionService {
     private void applyDto(NoticeDTO dto, NoticePortalDO notice) {
         notice.setTitle(dto.getTitle());
         notice.setProjectNo(dto.getProjectNo());
-        notice.setType(dto.getType());
-        notice.setProvince(dto.getProvince());
-        notice.setCity(dto.getCity());
         notice.setIndustry(dto.getIndustry());
         notice.setBudget(dto.getBudget());
-        notice.setTenderPerson(dto.getTenderPerson());
-        notice.setAgency(dto.getAgency());
         notice.setContact(dto.getContact());
         notice.setContactPhone(dto.getContactPhone());
         notice.setContent(dto.getContent());
-        notice.setSource(dto.getSource());
         notice.setSourceUrl(dto.getSourceUrl());
         notice.setPublishTime(dto.getPublishTime());
-        notice.setDeadline(dto.getDeadline());
         notice.setOpenTime(dto.getOpenTime());
         notice.setRegionCode(dto.getRegionCode());
-        // 新模型国标列不在这里覆盖：保留库中已有值，由 syncModel 合并 DTO 后统一写回
+        // 其余国标列在 syncModel 中统一写回
     }
 
-    private boolean isChanged(NoticePortalDO existing, NoticeDTO dto) {
+    private boolean isChanged(NoticePortalDO existing, NoticeDTO dto, RegionCodes region) {
         if (!equalsSafe(existing.getTitle(), dto.getTitle())
-                || !equalsSafe(existing.getDeadline(), dto.getDeadline())
-                || !equalsSafe(existing.getBudget(), dto.getBudget())
-                || !equalsSafe(existing.getContent(), dto.getContent())
-                || !equalsSafe(existing.getProvince(), dto.getProvince())
-                || !equalsSafe(existing.getCity(), dto.getCity())
-                || !equalsSafe(existing.getIndustry(), dto.getIndustry())
                 || !equalsSafe(existing.getProjectNo(), dto.getProjectNo())
-                || !equalsSafe(existing.getTenderPerson(), dto.getTenderPerson())
-                || !equalsSafe(existing.getAgency(), dto.getAgency())
+                || !equalsSafe(existing.getIndustry(), dto.getIndustry())
+                || !equalsSafe(existing.getBudget(), dto.getBudget())
                 || !equalsSafe(existing.getContact(), dto.getContact())
                 || !equalsSafe(existing.getContactPhone(), dto.getContactPhone())
+                || !equalsSafe(existing.getContent(), dto.getContent())
                 || !equalsSafe(existing.getOpenTime(), dto.getOpenTime())
                 || !equalsSafe(existing.getPublishTime(), dto.getPublishTime())
-                || !equalsSafe(existing.getRegionCode(), dto.getRegionCode())) {
+                || !equalsSafe(existing.getRegionCode(), dto.getRegionCode())
+                || !equalsSafe(existing.getNoticeTypeCode(),
+                        firstNonBlank(dto.getNoticeTypeCode(), existing.getNoticeTypeCode()))
+                || !equalsSafe(existing.getBidDeadline(),
+                        firstNonNull(dto.getBidDeadline(), existing.getBidDeadline()))
+                || !equalsSafe(existing.getSourcePlatform(),
+                        firstNonBlank(dto.getSourcePlatform(), existing.getSourcePlatform()))
+                || !equalsSafe(existing.getProvinceCode(),
+                        firstNonBlank(region.provinceCode, existing.getProvinceCode()))
+                || !equalsSafe(existing.getCityCode(),
+                        firstNonBlank(region.cityCode, existing.getCityCode()))) {
             return true;
         }
-        // 新国标列：只有解析器明确产出时才参与变更判断，避免 null 覆盖库中已有值
+        // 国标列：只有解析器明确产出时才参与变更判断，避免 null 覆盖库中已有值
         if ((dto.getUnifiedDealCode() != null && !equalsSafe(existing.getUnifiedDealCode(), dto.getUnifiedDealCode()))
                 || (dto.getPriceCeiling() != null && !equalsSafe(existing.getPriceCeiling(), dto.getPriceCeiling()))
                 || (dto.getDepositAmount() != null && !equalsSafe(existing.getDepositAmount(), dto.getDepositAmount()))
@@ -633,8 +631,8 @@ public class NoticeIngestionService {
     // ------------------------------------------------------------------
 
     private RegionCodes resolveRegion(NoticeDTO dto) {
-        String provinceCode = firstNonBlank(dto.getProvinceCode(), lookupProvinceCode(dto.getProvince()));
-        String cityCode = firstNonBlank(dto.getCityCode(), lookupCityCode(provinceCode, dto.getCity()));
+        String provinceCode = firstNonBlank(dto.getProvinceCode(), lookupProvinceCode(dto.getProvinceName()));
+        String cityCode = firstNonBlank(dto.getCityCode(), lookupCityCode(provinceCode, dto.getCityName()));
         String districtCode = safe(dto.getDistrictCode());
         String adminRegionCode = firstNonBlank(cityCode, provinceCode, dto.getRegionCode());
         return new RegionCodes(provinceCode, cityCode, districtCode, adminRegionCode);

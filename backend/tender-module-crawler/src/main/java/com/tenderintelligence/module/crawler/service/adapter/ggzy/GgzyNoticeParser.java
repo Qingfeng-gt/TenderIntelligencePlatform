@@ -43,7 +43,7 @@ public final class GgzyNoticeParser {
     // ==================== 类型映射 ====================
 
     /**
-     * 源站 informationType 码 → 本项目 notice.type
+     * 源站 informationType 码 → 本项目 notice.notice_type_code
      *
      * 用**显式码表**而非「后两位编码规律」: 实测规律不成立 —— {@code 0102}(开标记录)、
      * {@code 2302}(交易公告)都破例(同为 "02" 结尾, 前者不是中标, 后者不是中标而是招标)。
@@ -117,7 +117,7 @@ public final class GgzyNoticeParser {
     public static NoticeDTO parse(JsonNode record, String html, String fallback, String sourceUrl, String source) {
         NoticeDTO notice = new NoticeDTO();
         notice.setSourceUrl(sourceUrl);
-        notice.setSource(source);
+        notice.setSourcePlatform(source);
 
         // 1) 正文(判空由调用方负责, 这里只做截取)
         String content = GgzyHtmlSupport.extractContent(html);
@@ -131,7 +131,7 @@ public final class GgzyNoticeParser {
         notice.setTitle(title == null ? "" : title);
 
         // 3) 类型: 码表 → 正文/文本关键词 → 频道兜底
-        notice.setType(detectType(text(record, "informationType"),
+        notice.setNoticeTypeCode(detectType(text(record, "informationType"),
                 text(record, "informationTypeText"), fallback));
 
         // 4) 发布时间: 正文页精确到分, 兜底列表的日期(只有日粒度)
@@ -157,8 +157,8 @@ public final class GgzyNoticeParser {
                 city = region[1];
             }
         }
-        notice.setProvince(province);
-        notice.setCity(city);
+        notice.setProvinceName(province);
+        notice.setCityName(city);
 
         // 6) 行业: 源站字段优先, 兜底关键词词典
         String industry = text(record, "industryTypeText");
@@ -172,13 +172,13 @@ public final class GgzyNoticeParser {
         }
         notice.setProjectNo(GgzyHtmlSupport.clean(projectNo));
         notice.setBudget(parseBudget(plain));
-        notice.setTenderPerson(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(TENDER_PERSON, plain)));
-        notice.setAgency(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(AGENCY, plain)));
+        notice.setTendererName(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(TENDER_PERSON, plain)));
+        notice.setAgencyName(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(AGENCY, plain)));
         notice.setContact(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(CONTACT, plain)));
         notice.setContactPhone(GgzyHtmlSupport.clean(GgzyHtmlSupport.firstGroup(PHONE, plain)));
 
         // 8) 截止/开标时间(源站常合并为一个锚点, 此时两者同值 —— 与 ccgp 同样的设计事实)
-        notice.setDeadline(GgzyHtmlSupport.parseDateTime(GgzyHtmlSupport.firstGroup(DEADLINE, plain)));
+        notice.setBidDeadline(GgzyHtmlSupport.parseDateTime(GgzyHtmlSupport.firstGroup(DEADLINE, plain)));
         notice.setOpenTime(GgzyHtmlSupport.parseDateTime(GgzyHtmlSupport.firstGroup(OPEN_TIME, plain)));
 
         // 9) 附件(正文内锚点, 尽力而为 —— 正文来自各省平台, 无统一附件区块)

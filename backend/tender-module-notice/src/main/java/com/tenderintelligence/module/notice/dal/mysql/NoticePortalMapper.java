@@ -78,12 +78,6 @@ public interface NoticePortalMapper extends BaseMapperX<NoticePortalDO> {
     Long selectProvinceCodeCount();
 
     /**
-     * 覆盖省份数量（旧列兜底）
-     */
-    @Select("SELECT COUNT(DISTINCT province) FROM notice WHERE deleted = 0 AND province IS NOT NULL AND province <> '' AND province != '其他'")
-    Long selectProvinceCount();
-
-    /**
      * 行业分类数量（去重，排除空值）
      */
     @Select("SELECT COUNT(DISTINCT industry) FROM notice WHERE deleted = 0 AND industry IS NOT NULL AND industry <> ''")

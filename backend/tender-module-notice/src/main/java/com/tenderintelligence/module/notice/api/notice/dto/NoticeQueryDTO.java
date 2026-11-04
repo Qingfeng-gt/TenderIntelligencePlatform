@@ -23,36 +23,26 @@ public class NoticeQueryDTO extends PageParam {
     private String keyword;
 
     /**
-     * 公告类型：tender 招标 / win 中标 / change 变更 / explore 采购
+     * 公告类型代码：tender / win / change / explore / qualify
      */
-    private String type;
+    private String noticeTypeCode;
 
-    /**
-     * 省份
-     */
-    private String province;
-
-    /** 省级代码（新模型；优先于 province） */
+    /** 省级代码 */
     private String provinceCode;
 
-    /** 市级代码（新模型） */
+    /** 市级代码 */
     private String cityCode;
 
     /** 预算下限（万元） */
     private BigDecimal budgetMin;
 
     /**
-     * 行业分类
+     * 行业（规则抽取结果）
      *
      * <p>⚠️ 口径见 doc/毕设 §6 第 8 项：这个字段是 crawler 用关键词词典推导的<b>规则抽取结果</b>，
      * 不是权威标签。权威标签源是戊的 {@code tag} 表，多维筛选请改用 {@link #tagIds}。
      */
     private String industry;
-
-    /**
-     * 地区（省或市，模糊匹配）
-     */
-    private String region;
 
     /**
      * 预算上限（万元）

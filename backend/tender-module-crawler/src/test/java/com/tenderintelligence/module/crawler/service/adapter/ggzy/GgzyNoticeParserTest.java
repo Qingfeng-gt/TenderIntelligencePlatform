@@ -105,16 +105,16 @@ class GgzyNoticeParserTest {
     void mapsEveryMeasuredTypeCode(String code, String expected) {
         JsonNode record = record("{\"informationType\": \"" + code + "\", \"informationTypeText\": \"\"}");
 
-        assertThat(parse(record, page("<p>正文</p>")).getType()).isEqualTo(expected);
+        assertThat(parse(record, page("<p>正文</p>")).getNoticeTypeCode()).isEqualTo(expected);
     }
 
     @Test
     @DisplayName("码表未收录时降级到类型文本关键词 —— 源站新增码不应退化成兜底类型")
     void fallsBackToTypeTextForUnknownCode() {
         assertThat(parse(record("{\"informationType\":\"0199\",\"informationTypeText\":\"中标候选人公示\"}"),
-                page("<p>正文</p>")).getType()).isEqualTo("win");
+                page("<p>正文</p>")).getNoticeTypeCode()).isEqualTo("win");
         assertThat(parse(record("{\"informationType\":\"0199\",\"informationTypeText\":\"答疑澄清文件\"}"),
-                page("<p>正文</p>")).getType()).isEqualTo("change");
+                page("<p>正文</p>")).getNoticeTypeCode()).isEqualTo("change");
     }
 
     @Test
@@ -124,7 +124,7 @@ class GgzyNoticeParserTest {
                 record("{\"informationType\":\"9999\",\"informationTypeText\":\"\"}"),
                 page("<p>正文</p>"), "explore", DETAIL_URL, SITE_NAME);
 
-        assertThat(notice.getType()).isEqualTo("explore");
+        assertThat(notice.getNoticeTypeCode()).isEqualTo("explore");
     }
 
     // ==================== 结构化字段 ====================
@@ -132,11 +132,11 @@ class GgzyNoticeParserTest {
     @Test
     @DisplayName("省份按简称入库 —— 存全称会让前端省份筛选恒不命中(同 ccgp 踩过的坑)")
     void normalizesProvinceToShortForm() {
-        assertThat(parse(record("{\"provinceText\":\"四川省\"}"), page("<p>正文</p>")).getProvince())
+        assertThat(parse(record("{\"provinceText\":\"四川省\"}"), page("<p>正文</p>")).getProvinceName())
                 .isEqualTo("四川");
-        assertThat(parse(record("{\"provinceText\":\"广西壮族自治区\"}"), page("<p>正文</p>")).getProvince())
+        assertThat(parse(record("{\"provinceText\":\"广西壮族自治区\"}"), page("<p>正文</p>")).getProvinceName())
                 .isEqualTo("广西");
-        assertThat(parse(record("{\"provinceText\":\"北京市\"}"), page("<p>正文</p>")).getProvince())
+        assertThat(parse(record("{\"provinceText\":\"北京市\"}"), page("<p>正文</p>")).getProvinceName())
                 .isEqualTo("北京");
     }
 
@@ -146,13 +146,13 @@ class GgzyNoticeParserTest {
         NoticeDTO notice = parse(record(null), page("<p>正文</p>"));
 
         assertThat(notice.getRegionCode()).isEqualTo("510000");
-        assertThat(notice.getProvince()).isEqualTo("四川");
+        assertThat(notice.getProvinceName()).isEqualTo("四川");
     }
 
     @Test
     @DisplayName("城市去掉「市」后缀, 与 NoticeRegionExtractor 口径一致")
     void normalizesCitySuffix() {
-        assertThat(parse(record("{\"cityText\":\"成都市\"}"), page("<p>正文</p>")).getCity()).isEqualTo("成都");
+        assertThat(parse(record("{\"cityText\":\"成都市\"}"), page("<p>正文</p>")).getCityName()).isEqualTo("成都");
     }
 
     @Test
@@ -165,8 +165,8 @@ class GgzyNoticeParserTest {
                         + "\"title\":\"武汉市江岸区某医院医疗设备采购项目招标公告\"}"),
                 page("<p>本项目位于湖北省, 招标人为某单位。</p>"));
 
-        assertThat(notice.getProvince()).isEqualTo("湖北");
-        assertThat(notice.getCity()).isEqualTo("武汉");
+        assertThat(notice.getProvinceName()).isEqualTo("湖北");
+        assertThat(notice.getCityName()).isEqualTo("武汉");
     }
 
     @Test
@@ -239,7 +239,7 @@ class GgzyNoticeParserTest {
                 <p>投标截止时间（开标时间）:2026-10-10 10:00</p>
                 """));
 
-        assertThat(notice.getDeadline()).isEqualTo(LocalDateTime.of(2026, 10, 10, 10, 0));
+        assertThat(notice.getBidDeadline()).isEqualTo(LocalDateTime.of(2026, 10, 10, 10, 0));
         assertThat(notice.getOpenTime()).isEqualTo(LocalDateTime.of(2026, 10, 10, 10, 0));
     }
 
@@ -253,8 +253,8 @@ class GgzyNoticeParserTest {
                 <p>联系方式:028-81208678</p>
                 """));
 
-        assertThat(notice.getTenderPerson()).isEqualTo("成光镜界（四川）科技有限公司");
-        assertThat(notice.getAgency()).isEqualTo("中咨高技术咨询中心有限公司");
+        assertThat(notice.getTendererName()).isEqualTo("成光镜界（四川）科技有限公司");
+        assertThat(notice.getAgencyName()).isEqualTo("中咨高技术咨询中心有限公司");
         assertThat(notice.getContact()).isEqualTo("鲜老师");
         assertThat(notice.getContactPhone()).isEqualTo("028-81208678");
     }
@@ -274,8 +274,8 @@ class GgzyNoticeParserTest {
 
         assertThat(notice.getProjectNo()).isNull();
         assertThat(notice.getBudget()).isNull();
-        assertThat(notice.getDeadline()).isNull();
-        assertThat(notice.getTenderPerson()).isNull();
+        assertThat(notice.getBidDeadline()).isNull();
+        assertThat(notice.getTendererName()).isNull();
         assertThat(notice.getContent()).contains("本公告无结构化字段");
     }
 

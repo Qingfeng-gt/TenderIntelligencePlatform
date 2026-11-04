@@ -17,7 +17,7 @@
 | `notice.sql` | 业务全量：标讯 / 采集 / 投标 + 菜单与站点种子 | 4 | ② 必执行（依赖 ①） |
 | `quartz.sql` | Quartz 定时任务 `QRTZ_*` 表 | 11 | ③ 仅启用 Quartz 的环境 |
 
-> 另有 `refactor/` 目录用于**已存在库的增量重构**（P0 数据地基），不参与上述全新初始化顺序，见 §六。
+> 另有 `refactor/` 目录用于**已存在库的增量重构**（P0 数据地基）。**新库初始化后也必须执行 `refactor/P0-1` ~ `P0-6`**，否则四层模型表不存在，且 `notice` 仍是旧列结构。见 §六。
 
 ---
 
@@ -25,7 +25,7 @@
 
 ### 2.1 `tender.sql` —— 框架基础（必执行）
 
-- Navicat 导出脚本，**须在已创建好的 `tender` 库中执行**（脚本本身不建库）。
+- Navicat 导出脚本，已补充 `CREATE DATABASE IF NOT EXISTS tender` + `USE tender`，可直接执行，不需要预先建库。
 - 共 **29 张表**：
 
 | 分组 | 数量 | 内容 |
@@ -59,7 +59,7 @@
 
 | 序号 | 表名 | 中文名 | 要点 |
 |---|---|---|---|
-| 1 | `notice` | 招投标公告（标讯） | 核心表。含爬虫扩展字段 `project_no`、`source_url`（**唯一去重键**，`uk_source_url`）、`deadline`、`open_time`、`region_code`；4 个业务索引（`idx_type_publish`、`idx_province`、`idx_industry`、`idx_publish_time`）；`AUTO_INCREMENT=100` |
+| 1 | `notice` | 招投标公告（标讯） | 核心表。历史初始化脚本含旧列 `type` / `province` / `city` / `tender_person` / `agency` / `deadline` / `source`；执行 `refactor/P0-6` 后这些列被删除，改用 `notice_type_code` / `province_code` / `city_code` / `tenderer_enterprise_id` / `agency_enterprise_id` / `bid_deadline` / `source_platform` 等新列。`source_url` 仍是唯一去重键 |
 | 2 | `notice_attachment` | 标讯附件 | `notice` 的子表（一条公告多个附件）。存源站附件直链与元信息（`file_name`/`file_url`/`file_type`/`file_size`/`sort`），**不存文件本体**；无唯一键，写入为「先删后写」整组重写，故源站删掉的附件不残留 |
 | 3 | `crawler_site` | 爬虫站点配置 | `code` 唯一（对应 `SourceAdapter` 实现）、`enabled`、`channels`（频道 JSON）、`interval_ms`（详情页请求间隔，防反爬）、`config`（UA / 首访 URL 等） |
 | 4 | `crawler_task` | 采集任务日志 | 起止时间、状态（`RUNNING`/`SUCCESS`/`FAILED`）、列表与详情抓取数、新增/更新数、失败原因 |
@@ -94,20 +94,23 @@
 ## 三、执行顺序（一次性初始化）
 
 ```bash
-# 1. 建库（一次性）
-mysql -uroot -p -e "CREATE DATABASE tender DEFAULT CHARACTER SET utf8mb4"
+# 1. 框架基础（29 表 + 最小种子）
+#    tender.sql 会自动 CREATE DATABASE IF NOT EXISTS tender 并 USE tender
+mysql -uroot -p < backend/sql/mysql/tender.sql
 
-# 2. 框架基础（29 表 + 最小种子）
-mysql -uroot -p tender < backend/sql/mysql/tender.sql
+# 2. 业务全量（4 表 + 菜单/站点种子）
+mysql -uroot -p < backend/sql/mysql/notice.sql
 
-# 3. 业务全量（4 表 + 菜单/站点种子）
-mysql -uroot -p tender < backend/sql/mysql/notice.sql
+# 3. P0 终态（四层模型 + 企业 + 采集治理 + 删除 notice 旧列）
+cd backend/sql/mysql/refactor
+DB_PASS='你的密码' ./P0__run_all.sh --yes
+cd -
 
 # 4. 仅 dev/test 等启用 Quartz 的环境
-mysql -uroot -p tender < backend/sql/mysql/quartz.sql
+mysql -uroot -p < backend/sql/mysql/quartz.sql
 ```
 
-**顺序约束**：`tender.sql` → `notice.sql` 为**固定顺序**（后者依赖前者的 `system_menu` 表）；`quartz.sql` 与业务链无关，任意时机执行均可。
+**顺序约束**：`tender.sql` → `notice.sql` → `refactor/P0__run_all.sh` 为**固定顺序**（后者依赖前两者的表与种子）；`quartz.sql` 与业务链无关，任意时机执行均可。
 
 ---
 
@@ -127,7 +130,7 @@ mysql -uroot -p tender < backend/sql/mysql/quartz.sql
 
 | 场景 | 做法 |
 |---|---|
-| 新库 / 整体重置 | 继续用 `tender.sql` → `notice.sql` 全量初始化，**不要**把重构增量脚本混进初始化顺序 |
+| 新库 / 整体重置 | `tender.sql` → `notice.sql` → `refactor/P0__run_all.sh --yes`，得到终态结构（含四层模型，旧列已删除） |
 | 已存在库的结构演进 | 在 `refactor/` 下按批次新增 `P0-x__*.sql`，每批附带 `*_rollback.sql`；先备份、先在测试库执行 |
 | 修改已有表结构 | 重构期用增量脚本；全量脚本中的表结构在 P0 稳定后再同步折叠 |
 | 生产环境变更 | ⚠️ 必须备份 + 回滚脚本 + 先在测试库验证；不要在业务高峰期执行大表 `ALTER` |
@@ -145,7 +148,7 @@ mysql -uroot -p tender < backend/sql/mysql/quartz.sql
 
 | 文件 | 作用 | 前置 |
 |---|---|---|
-| `P0__run_all.sh` | **一键执行**：备份 → P0-1 → P0-2 → P0-3 → P0-4 → 校验 | — |
+| `P0__run_all.sh` | **一键执行**：备份 → P0-1 → P0-2 → P0-3 → P0-4 → P0-6 → 校验 | — |
 | `P0-1__base_data.sql` | `base_area`、`base_code`、`base_field_mapping` + 省级/演示城市/编码种子 | 无 |
 | `P0-2__enterprise.sql` | `enterprise`、`enterprise_role`、`enterprise_contact`、`enterprise_alias` | P0-1 |
 | `P0-2__enterprise_backfill.sql` | 从 `notice.tender_person` / `agency` 回填企业主档与角色 | P0-2 建表 |
@@ -156,8 +159,10 @@ mysql -uroot -p tender < backend/sql/mysql/quartz.sql
 | `P0-4__crawl_governance.sql` | `crawler_channel`、`crawler_fetch_log`、`crawl_raw`、`crawl_parse_rule`、`crawl_merge_log`、`notice_quality`；扩展 `crawler_site` / `crawler_task` | 现有采集表 |
 | `P0-4__crawler_channel_backfill.sql` | `crawler_site.channels` JSON → `crawler_channel` | P0-4 建表 |
 | `P0-4__crawl_validate.sql` | 频道/日志表只读校验 | P0-4 回填 |
-| `P0-5__compat_check.sql` | 旧列/新列/新表对账 | P0-3/P0-4 |
-| `P0-5__compat_runbook.md` | 兼容期运行手册、切换/回滚步骤 | — |
+| `P0-5__compat_check.sql` | 终态对账：旧列清理结果、新列空值、四层/企业/频道完整度 | P0-6 |
+| `P0-5__compat_runbook.md` | 终态说明、对账与回滚步骤 | — |
+| `P0-6__drop_legacy_columns.sql` | **删除 `notice` 旧列**（type/province/city/tender_person/agency/deadline/source） | P0-3 回填完成 |
+| `P0-6__drop_legacy_columns_rollback.sql` | 仅恢复旧列结构（数据不恢复） | — |
 | `*_cleanup.sql` | 只撤回填数据，保留表结构 | 对应批次 |
 | `*_rollback.sql` | 删除对应批次新增表（默认保留新列） | — |
 
@@ -180,17 +185,18 @@ mysql -uroot -p tender < P0-3__tender_model.sql
 mysql -uroot -p tender < P0-3__notice_backfill.sql
 mysql -uroot -p tender < P0-4__crawl_governance.sql
 mysql -uroot -p tender < P0-4__crawler_channel_backfill.sql
+mysql -uroot -p tender < P0-6__drop_legacy_columns.sql
 mysql -uroot -p tender < P0-5__compat_check.sql
 ```
 
 **执行原则**：
 
 1. 先 `mysqldump` 备份；先在测试库执行。
-2. 前向脚本只用 `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN` / `INSERT ... ON DUPLICATE KEY UPDATE`，不 `DROP`、不 `TRUNCATE`、不 `DELETE`。
-3. P0 阶段**不删除、不改名、不修改旧列类型**；对 `notice` / `notice_attachment` / `crawler_site` / `crawler_task` 只做新增列。
+2. P0-1 ~ P0-5 只用 `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN` / `INSERT ... ON DUPLICATE KEY UPDATE`；**P0-6 会删除 `notice` 旧列**，是终态脚本。
+3. 旧列在 P0-6 执行后不再存在；P0-2/P0-3 回填脚本必须在 P0-6 之前执行（`P0__run_all.sh` 会自动检测并跳过）。
 4. 扩展用“哨兵列”判断，回填按唯一键/`NOT EXISTS`，均可重复执行。
-5. 新表先存在，业务仍读旧表；P0-5 兼容层与前端逐页切换后再改读路径。
-6. P0 稳定后，把最终结构折叠回 `tender.sql` / `notice.sql`，`refactor/` 保留作迁移历史。
+5. 读路径已全量切换：业务只读写新模型，旧接口 `/notice/list|get|stats` 已删除。
+6. 全量初始化脚本的最终结构折叠仍待后续完成；在此之前，新库按 `tender.sql` → `notice.sql` → `refactor/P0__run_all.sh --yes` 初始化。
 
 **本批已知边界**：
 
@@ -198,8 +204,8 @@ mysql -uroot -p tender < P0-5__compat_check.sql
 - `base_code` 的代码值有占位项，最终需按 V2.0 附录核对。
 - 项目归并按 `SHA256(项目编号或标题 | region_code | 项目编号)` 生成 `project_key`；跨源站精确归并与人工合并需后续接 `crawl_merge_log`。
 - 旧数据无标段信息，统一生成 `lot_no='DEFAULT'` 的默认标段。
-- 企业回填只抽 `tender_person` / `agency` 名称，不解析联系人、不补信用代码。
-- 采集代码未改；过渡期每次采集后重跑 `P0-3__notice_backfill.sql`，详见 `P0-5__compat_runbook.md`。
+- 企业名称已实体化到 `enterprise` / `notice_enterprise`；旧 `tender_person` / `agency` 列随 P0-6 删除。
+- 采集链路已改：适配器经 `NoticeApi.upsert(NoticeDTO)` 写四层模型，不再依赖 P0-3 回填。
 - `notice` 的 ngram 全文索引未包含在本批脚本中，需要时单独加。
 
 ---

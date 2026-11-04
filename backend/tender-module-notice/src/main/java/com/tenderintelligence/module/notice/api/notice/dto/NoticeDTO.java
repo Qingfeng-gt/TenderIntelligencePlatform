@@ -11,7 +11,8 @@ import java.util.List;
  *
  * <p>由采集适配器解析产出，交给 {@code NoticeApi.upsert(..)} 去重入库。
  *
- * <p>字段与现状的 {@code NoticePortalDO} 对齐——迁移时把 adapter 里 new 的 DO 换成这个 DTO 即可。
+ * <p>字段使用新模型语义：类型代码、省市中文名（入库时匹配区划代码）、企业名称（入库时匹配/创建主体）、
+ * 投标截止时间与来源平台。旧扁平列已删除。
  */
 @Data
 public class NoticeDTO {
@@ -27,27 +28,27 @@ public class NoticeDTO {
     private String projectNo;
 
     /**
-     * 公告类型：tender / win / change / explore
+     * 公告类型代码：tender / win / change / explore / qualify
      */
-    private String type;
+    private String noticeTypeCode;
 
     /**
-     * 省份
+     * 省份中文名（解析器产出，入库时用于匹配 province_code）
      */
-    private String province;
+    private String provinceName;
 
     /**
-     * 城市
+     * 城市中文名（解析器产出，入库时用于匹配 city_code）
      */
-    private String city;
+    private String cityName;
 
     /**
-     * 行业
+     * 行业（规则抽取结果，非权威标签）
      */
     private String industry;
 
     /**
-     * 行政区划码
+     * 源站行政区划码
      */
     private String regionCode;
 
@@ -57,14 +58,14 @@ public class NoticeDTO {
     private BigDecimal budget;
 
     /**
-     * 招标人 / 采购人
+     * 招标人 / 采购人名称（解析器产出，入库时匹配/创建企业主体）
      */
-    private String tenderPerson;
+    private String tendererName;
 
     /**
-     * 代理机构
+     * 代理机构名称（解析器产出，入库时匹配/创建企业主体）
      */
-    private String agency;
+    private String agencyName;
 
     /**
      * 联系人
@@ -82,11 +83,6 @@ public class NoticeDTO {
     private String content;
 
     /**
-     * 来源网站标识
-     */
-    private String source;
-
-    /**
      * 源站详情 URL。<b>唯一去重键，必填</b>
      */
     private String sourceUrl;
@@ -95,11 +91,6 @@ public class NoticeDTO {
      * 发布时间
      */
     private LocalDateTime publishTime;
-
-    /**
-     * 报名 / 投标截止时间
-     */
-    private LocalDateTime deadline;
 
     /**
      * 开标时间
@@ -153,7 +144,7 @@ public class NoticeDTO {
      */
     private LocalDateTime signDeadline;
     /**
-     * 投标截止时间（国标列；为空时入库服务回落到 deadline）
+     * 投标截止时间（国标列）
      */
     private LocalDateTime bidDeadline;
     /**

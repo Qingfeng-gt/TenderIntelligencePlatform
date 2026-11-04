@@ -30,12 +30,11 @@ FROM `enterprise_role` `r`
 WHERE `r`.`deleted` = b'0'
 GROUP BY `r`.`role_code`;
 
--- 4) 公告原文里仍有、但未回填进 enterprise 的名称（抽样）
+-- 4) 公告关联里仍有、但未回填进 enterprise 的名称（抽样）
 SELECT `t`.`raw_name`, COUNT(*) AS `notice_count`
 FROM (
-  SELECT TRIM(`tender_person`) AS `raw_name` FROM `notice` WHERE `deleted` = b'0' AND TRIM(`tender_person`) <> ''
-  UNION ALL
-  SELECT TRIM(`agency`) AS `raw_name` FROM `notice` WHERE `deleted` = b'0' AND TRIM(`agency`) <> ''
+  SELECT TRIM(`source_text`) AS `raw_name` FROM `notice_enterprise`
+  WHERE `deleted` = b'0' AND TRIM(`source_text`) <> ''
 ) `t`
 LEFT JOIN `enterprise` `e` ON `e`.`normalized_name` = LEFT(
   TRIM(

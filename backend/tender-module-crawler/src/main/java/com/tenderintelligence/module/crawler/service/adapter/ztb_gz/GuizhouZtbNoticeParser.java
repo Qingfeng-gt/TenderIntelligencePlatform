@@ -71,7 +71,7 @@ public final class GuizhouZtbNoticeParser {
     public static NoticeDTO parse(JsonNode detail, String fallback, String sourceUrl, String source) {
         NoticeDTO notice = new NoticeDTO();
         notice.setSourceUrl(sourceUrl);
-        notice.setSource(source);
+        notice.setSourcePlatform(source);
 
         String title = text(detail, "Title");
         String content = text(detail, "Content");
@@ -80,29 +80,29 @@ public final class GuizhouZtbNoticeParser {
         notice.setRegionCode(text(detail, "RegionCode"));
 
         // 1) 类型: 优先 BTypeCode, 兜底 BTypeCategory / 频道类型
-        notice.setType(detectType(text(detail, "BTypeCode"), text(detail, "BTypeCategory"), fallback));
+        notice.setNoticeTypeCode(detectType(text(detail, "BTypeCode"), text(detail, "BTypeCategory"), fallback));
 
         // 2) 结构化字段(正文纯文本锚点; ProjectNo 优先源站统一交易码)
         String plain = stripTags(content);
         notice.setProjectNo(clean(notEmpty(text(detail, "UnifiedDealCode")) ? text(detail, "UnifiedDealCode")
                 : first(PROJECT_NO, plain)));
         notice.setBudget(parseBudget(plain));
-        notice.setTenderPerson(clean(first(TENDER_PERSON, plain)));
-        notice.setAgency(clean(notEmpty(first(AGENCY, plain)) ? first(AGENCY, plain)
+        notice.setTendererName(clean(first(TENDER_PERSON, plain)));
+        notice.setAgencyName(clean(notEmpty(first(AGENCY, plain)) ? first(AGENCY, plain)
                 : text(detail, "Source"))); // 兜底: 源站的发布机构字段
         notice.setContact(clean(first(CONTACT, plain)));
         notice.setContactPhone(clean(first(PHONE, plain)));
 
         // 3) 截止/开标时间
-        notice.setDeadline(parseDateTime(first(DEADLINE_ANCHOR, plain)));
+        notice.setBidDeadline(parseDateTime(first(DEADLINE_ANCHOR, plain)));
         notice.setOpenTime(parseDateTime(first(OPEN_ANCHOR, plain)));
 
         // 4) 发布时间(源站字段 yyyy-MM-dd; 缺省用当前时间)
         notice.setPublishTime(parseDate(text(detail, "PublishDate")));
 
         // 5) 地区(固定贵州, 城市按 RegionCode)/行业(公共词典)
-        notice.setProvince("贵州");
-        notice.setCity(regionCity(notice.getRegionCode()));
+        notice.setProvinceName("贵州");
+        notice.setCityName(regionCity(notice.getRegionCode()));
         String detectSource = notice.getTitle() + " " + plain;
         notice.setIndustry(NoticeRegionExtractor.detectIndustry(detectSource));
 

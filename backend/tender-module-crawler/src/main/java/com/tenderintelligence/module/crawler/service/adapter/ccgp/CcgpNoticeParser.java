@@ -47,9 +47,9 @@ public final class CcgpNoticeParser {
      */
     public static NoticeDTO parse(String html, String type, String sourceUrl, String source) {
         NoticeDTO notice = new NoticeDTO();
-        notice.setType(type);
+        notice.setNoticeTypeCode(type);
         notice.setSourceUrl(sourceUrl);
-        notice.setSource(source);
+        notice.setSourcePlatform(source);
 
         // 1) 正文: #noticeArea 内的公告内容(保留 HTML 供前端渲染)
         String content = CcgpHtmlSupport.extractContent(html);
@@ -69,14 +69,14 @@ public final class CcgpNoticeParser {
         // 3) 结构化字段(在正文全文上做正则)
         notice.setProjectNo(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(CcgpHtmlSupport.PROJECT_NO, content)));
         notice.setBudget(CcgpHtmlSupport.parseBudgetFromYuan(CcgpHtmlSupport.first(BUDGET, content)));
-        notice.setTenderPerson(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(PURCHASER, content)));
-        notice.setAgency(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(AGENCY, content)));
+        notice.setTendererName(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(PURCHASER, content)));
+        notice.setAgencyName(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(AGENCY, content)));
         notice.setContact(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(CONTACT, content)));
         notice.setContactPhone(CcgpHtmlSupport.clean(CcgpHtmlSupport.first(PURCHASER_TEL, content)));
 
         // 4) 投标截止/开标时间(CCGP 公开招标: 开标时间=投标截止)
         LocalDateTime deadline = CcgpHtmlSupport.parseFullDateTime(CcgpHtmlSupport.first(DEADLINE, content));
-        notice.setDeadline(deadline);
+        notice.setBidDeadline(deadline);
         notice.setOpenTime(deadline);
 
         // 5) 发布日期(详情页 releaseDateSpan)
@@ -86,8 +86,8 @@ public final class CcgpNoticeParser {
         // 6) 地区/行业(规则提取, 公共词典)
         String detectSource = notice.getTitle() + " " + NoticeRegionExtractor.toPlainText(content);
         String[] region = NoticeRegionExtractor.extractRegion(detectSource);
-        notice.setProvince(region[0]);
-        notice.setCity(region[1]);
+        notice.setProvinceName(region[0]);
+        notice.setCityName(region[1]);
         notice.setIndustry(NoticeRegionExtractor.detectIndustry(detectSource));
 
         return notice;

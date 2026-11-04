@@ -61,7 +61,7 @@ public class NoticeApiImpl implements NoticeApi {
         reqVO.setPageNo(query.getPageNo());
         reqVO.setPageSize(query.getPageSize());
         reqVO.setKeyword(query.getKeyword());
-        reqVO.setNoticeTypeCode(query.getType());
+        reqVO.setNoticeTypeCode(query.getNoticeTypeCode());
         reqVO.setProvinceCode(query.getProvinceCode());
         reqVO.setCityCode(query.getCityCode());
         reqVO.setIndustry(query.getIndustry());
@@ -81,13 +81,6 @@ public class NoticeApiImpl implements NoticeApi {
 
     private NoticeRespDTO toRespDTO(NoticeRespVO vo) {
         NoticeRespDTO dto = BeanUtils.toBean(vo, NoticeRespDTO.class);
-        dto.setType(vo.getNoticeTypeCode());
-        dto.setProvince(vo.getProvinceName());
-        dto.setCity(vo.getCityName());
-        dto.setTenderPerson(vo.getTendererName());
-        dto.setAgency(vo.getAgencyName());
-        dto.setDeadline(vo.getBidDeadline());
-        dto.setSource(vo.getSourcePlatform());
         dto.setAttachments(BeanUtils.toBean(vo.getAttachments(), NoticeAttachmentRespDTO.class));
         return dto;
     }

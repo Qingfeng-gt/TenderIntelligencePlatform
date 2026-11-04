@@ -14,5 +14,6 @@ public interface ErrorCodeConstants {
     ErrorCode AUTH_MEMBER_NOT_EXISTS = new ErrorCode(1_004_000_002, "会员不存在");
 
     ErrorCode MEMBER_USER_NOT_EXISTS = new ErrorCode(1_004_001_000, "会员用户不存在");
+    ErrorCode MEMBER_USER_STATUS_INVALID = new ErrorCode(1_004_001_001, "会员状态不合法");
 
 }

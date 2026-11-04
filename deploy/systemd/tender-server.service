@@ -1,0 +1,22 @@
+[Unit]
+Description=Tender Intelligence Platform
+Documentation=https://github.com/Qingfeng-gt/TenderIntelligencePlatform
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tender
+Group=tender
+WorkingDirectory=/opt/tender
+EnvironmentFile=/etc/tender/tender.env
+ExecStart=/usr/bin/java -Xms512m -Xmx2g -XX:+UseG1GC -jar /opt/tender/tender-server.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

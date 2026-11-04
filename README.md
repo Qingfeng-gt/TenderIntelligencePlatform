@@ -19,6 +19,7 @@
 ├── user-web/            # 用户端（Vue 3 + Vite + Element Plus）
 ├── tender-app/          # 移动端（UniApp，H5 / App）
 ├── backend/             # 后端（Maven 多模块 Spring Boot）
+├── deploy/              # 生产部署模板（Nginx / systemd / env）
 ├── doc/                 # 项目开发文档（架构 / 数据 / 接口 / 规范）
 ├── wsl-setup/           # WSL 环境自检与源站探测脚本
 └── .github/workflows/   # CI：后端 + 三端前端构建
@@ -106,6 +107,16 @@ cd tender-app && pnpm install && pnpm dev:h5 # H5
 - **可追溯**：`crawler_task` / `crawler_fetch_log` / `crawl_raw` / `notice_quality`。
 
 ---
+
+## 生产部署
+
+正式发布使用 `prod` profile，配置与部署模板在：
+
+- `backend/tender-server/src/main/resources/application-prod.yaml`
+- [`deploy/README.md`](deploy/README.md)（Nginx / systemd / 环境变量 / 上线检查清单）
+- [`doc/12-部署与运维.md`](doc/12-部署与运维.md)
+
+生产环境必须显式设置 `SPRING_PROFILES_ACTIVE=prod`，并替换数据库/Redis 密码、默认管理员密码与 OAuth2 密钥；不要执行 `demo-data.sql`。
 
 ## 合规边界
 

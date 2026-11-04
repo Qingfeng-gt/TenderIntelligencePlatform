@@ -1,0 +1,130 @@
+server:
+  port: 48080
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # 单实例默认关闭 Quartz；多实例或需要框架定时任务时删除 exclude 并执行 quartz.sql
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration
+
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: false
+      stat-view-servlet:
+        enabled: false
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      primary: master
+      druid:
+        initial-size: 5
+        min-idle: 10
+        max-active: 50
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 600000
+        max-evictable-idle-time-millis: 1800000
+        validation-query: SELECT 1 FROM DUAL
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        pool-prepared-statements: true
+        max-pool-prepared-statement-per-connection-size: 20
+      datasource:
+        master:
+          url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:tender}?useSSL=${DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          username: ${DB_USERNAME}
+          password: ${DB_PASSWORD}
+        slave:
+          lazy: true
+          url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:tender}?useSSL=${DB_SSL:true}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+          username: ${DB_USERNAME}
+          password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
+      password: ${REDIS_PASSWORD:}
+
+  # 生产默认不注册到 Spring Boot Admin；需要时改为 true 并配置地址
+  boot:
+    admin:
+      client:
+        enabled: false
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+knife4j:
+  enable: false
+
+logging:
+  file:
+    name: ${LOG_PATH:/var/log/tender}/tender-server.log
+  level:
+    root: INFO
+    com.tenderintelligence: INFO
+
+tender:
+  info:
+    version: 1.0.0
+    base-package: com.tenderintelligence
+
+  captcha:
+    enable: true
+  security:
+    mock-enable: false
+  access-log:
+    enable: true
+  demo: false
+
+  web:
+    admin-ui:
+      url: ${ADMIN_UI_URL:https://admin.example.com}
+
+  crawler:
+    schedule-enabled: ${CRAWLER_SCHEDULE_ENABLED:true}
+    schedule-cron: ${CRAWLER_SCHEDULE_CRON:0 0 */2 * * ?}
+
+  ai:
+    enabled: ${AI_ENABLED:false}
+    provider: deepseek
+    base-url: ${AI_BASE_URL:https://api.deepseek.com/v1}
+    api-key: ${DEEPSEEK_API_KEY:}
+    model: ${AI_MODEL:deepseek-chat}
+    embedding-model: ${AI_EMBEDDING_MODEL:}
+    embedding-dimensions: 1024
+    timeout: 60s
+    max-retries: 2
+    rate-limit-qps: 5
+    cache:
+      enabled: true
+      dir: .ai-cache

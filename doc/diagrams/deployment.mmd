@@ -1,0 +1,9 @@
+flowchart LR
+  U["浏览器 / 移动端"] --> N["Nginx / 静态资源托管<br/>admin-web · user-web · UniApp H5"]
+  N -->|"/admin-api · /app-api"| S["tender-server<br/>Spring Boot :48080"]
+  S --> M[("MySQL :3306<br/>tender")]
+  S --> R[("Redis :6379")]
+  S --> Q["Quartz<br/>仅 dev/test 启用"]
+  S -->|"HTTP 采集"| SRC["ccgp / ggzy / ztb_gz"]
+  CI["GitHub Actions<br/>Backend + 3 个前端"] -->|"构建产物"| N
+  OPS["运维: 日志 · Actuator · Spring Boot Admin"] --- S

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# P0 一键执行脚本
+# P0 一键执行脚本（历史旧库迁移用）
+#
+# ⚠️ 新库不需要执行本脚本：
+#    直接执行 backend/sql/mysql/tender.sql + notice.sql 即可，
+#    notice.sql 已是 P0 终态结构（含四层模型、企业、治理表与演示数据）。
+#
 # 用法:
 #   DB_PASS=你的密码 ./P0__run_all.sh --yes
 #   DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root DB_NAME=tender ./P0__run_all.sh

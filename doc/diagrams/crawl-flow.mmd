@@ -1,0 +1,37 @@
+sequenceDiagram
+  autonumber
+  participant SCH as ScheduledCrawlTask / CrawlerController
+  participant CS as CrawlService
+  participant AD as SourceAdapter
+  participant SRC as 公开源站
+  participant TEL as CrawlTelemetryService
+  participant API as NoticeApi
+  participant ING as NoticeIngestionService
+  participant DB as MySQL
+
+  SCH->>CS: run(siteCode, triggerType)
+  CS->>DB: 创建 crawler_task（RUNNING）
+  CS->>CS: 防重入检查 / 回收超时任务
+  CS->>AD: crawl(site, stats)
+
+  loop 每个启用频道
+    AD->>SRC: 请求列表页
+    SRC-->>AD: 列表 HTML / JSON
+    AD->>AD: 解析候选详情 URL
+    loop 每个候选公告
+      AD->>SRC: 请求详情页
+      SRC-->>AD: 详情 HTML / JSON
+      AD->>TEL: 记录 crawler_fetch_log / crawl_raw
+      AD->>AD: 解析为 NoticeDTO
+      AD->>API: upsert(NoticeDTO)
+      API->>ING: upsert(dto)
+      ING->>DB: 按 source_url 去重写 notice
+      ING->>DB: 确保 project / tender_project / tender_lot
+      ING->>DB: 确保 enterprise / notice_enterprise
+      ING->>DB: 写 notice_quality / crawl_merge_log
+    end
+  end
+
+  AD-->>CS: CrawlStats
+  CS->>DB: 更新 crawler_task（SUCCESS / FAILED）
+  CS->>DB: 更新 crawler_site 健康状态

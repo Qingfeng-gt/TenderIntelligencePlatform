@@ -160,20 +160,19 @@ java -jar tender-server/target/tender-server.jar --spring.profiles.active=local
 ## 数据库
 
 - 库:`tender`(master + slave 指向同一库,slave 为懒加载模拟)
-- 初始化脚本 `backend/sql/mysql/`,按序导入 `tender` 库,**一次性初始化**(均为全量 DROP+CREATE,详解见 `doc/运维/11-SQL脚本说明.md`)。`tender.sql` 会自动 `CREATE DATABASE IF NOT EXISTS tender` 并 `USE tender`,不需要预先建库:
+- 初始化脚本 `backend/sql/mysql/`,按序导入 `tender` 库,**一次性初始化**(均为全量 DROP+CREATE,详解见 `doc/12-部署与运维.md`)。`tender.sql` 会自动 `CREATE DATABASE IF NOT EXISTS tender` 并 `USE tender`,不需要预先建库:
 
 ```
 1. tender.sql            # 框架基础 29 张表:infra_/system_/member_user(含种子数据,仅初始化)
-2. notice.sql            # 历史业务种子:标讯/爬虫/投标 + 菜单与站点种子(仅初始化)
-3. refactor/P0__run_all.sh --yes
-                         # P0 终态:基础数据/企业/四层标讯/采集治理建表、回填、删除 notice 旧列
+2. notice.sql            # 业务最终结构 + 基础/站点/菜单种子（业务表为空，等待采集）
+3. demo-data.sql         # 可选：20 条演示公告 + 四层关联，用于门户联调
 4. quartz.sql            # QRTZ_* 11 张定时任务表(仅启用 Quartz 的 dev/test 环境)
 ```
 
-> **2026-11-04 P0 终态**:`notice` 旧列(`type`/`province`/`city`/`tender_person`/`agency`/`deadline`/`source`)已由 `refactor/P0-6` 删除；业务只读写四层模型(`project`/`tender_project`/`tender_lot`/`notice` 新列)、企业主体、基础数据与采集治理表。新库必须执行第 3 步，否则四层模型表不存在。详见 `doc/运维/11-SQL脚本说明.md`。
+> **2026-11-04 P0 终态**:`notice.sql` 已直接创建终态结构（`notice` 不含旧列，四层模型/企业/治理表齐全），**新库不需要再执行 `refactor/P0__run_all.sh`**。`refactor/` 仅保留作已存在库的历史迁移记录。详见 `doc/12-部署与运维.md`。
 
-> **2026-11-04 表结构现状**:P0 后新增 `base_area` / `base_code` / `base_field_mapping`、`enterprise*`、`project` / `tender_project` / `tender_lot` / `notice_change` / `notice_enterprise`、`crawler_channel` / `crawler_fetch_log` / `crawl_raw` / `crawl_parse_rule` / `crawl_merge_log` / `notice_quality` 等表；AI 模块已整体裁剪(`tender-module-ai` 与 ai-trimmed.sql、10 张 AI 表一起删除)。全部有代码引用、无缺表,`mvn compile` 通过。若后续要加回功能(如工作流审批),需重新导入对应模块并补建表。
-> **2026-09-09 种子清理**:框架自带的演示/测试/已裁模块(MES、IoT、HRM、商城、工作流、CMS 等)种子数据已清除,收敛为系统必需最小集合 —— 仅 admin 超管、15 个字典类型、45 条菜单、4 条定时任务、1 条数据库存储配置、1 条平台公告,另保留演示数据(demo123 会员 + 20 条演示标讯)。清理脚本:`doc/archive/clean_tender_sql.py`。
+> **2026-11-04 表结构现状**:业务表包含 `base_area` / `base_code` / `base_field_mapping`、`enterprise*`、`project` / `tender_project` / `tender_lot` / `notice` / `notice_attachment` / `notice_change` / `notice_enterprise` / `notice_quality`、`crawler_site` / `crawler_channel` / `crawler_task` / `crawler_fetch_log` / `crawl_raw` / `crawl_parse_rule` / `crawl_merge_log`、`bid_project`；AI 模块已整体裁剪(`tender-module-ai` 与 ai-trimmed.sql、10 张 AI 表一起删除)。全部有代码引用、无缺表,`mvn compile` 通过。
+> **2026-09-09 种子清理**:框架自带的演示/测试/已裁模块(MES、IoT、HRM、商城、工作流、CMS 等)种子数据已清除,收敛为系统必需最小集合 —— 仅 admin 超管、15 个字典类型、45 条菜单、4 条定时任务、1 条数据库存储配置、1 条平台公告,另保留演示会员 demo123;20 条演示标讯见 `demo-data.sql`。
 
 ## 后续裁剪方向(备忘)
 

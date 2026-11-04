@@ -39,7 +39,7 @@ public class NoticeQueryDTO extends PageParam {
     /**
      * 行业（规则抽取结果）
      *
-     * <p>⚠️ 口径见 doc/毕设 §6 第 8 项：这个字段是 crawler 用关键词词典推导的<b>规则抽取结果</b>，
+     * <p>⚠️ 口径见 doc/05-数据模型与ER图.md：这个字段是 crawler 用关键词词典推导的<b>规则抽取结果</b>，
      * 不是权威标签。权威标签源是戊的 {@code tag} 表，多维筛选请改用 {@link #tagIds}。
      */
     private String industry;

@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * {@code UploadFile}/{@code PdfFile} 字段取 —— 但"什么算附件""附件类型怎么写"必须同一口径。
  * 分散在各解析器里会漂移(与 user-web 行业列表相对 {@code NoticeRegionExtractor} 漂移同类问题)。
  *
- * 平台只保存附件的元信息与源站直链, 不下载文件本体(边界见 doc/技术/06-数据采集设计.md §十)。
+ * 平台只保存附件的元信息与源站直链, 不下载文件本体(边界见 doc/06-数据采集设计.md#十一合规要点)。
  */
 public final class AttachmentSupport {
 

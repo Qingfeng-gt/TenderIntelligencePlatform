@@ -1,0 +1,36 @@
+flowchart LR
+  server["tender-server<br/>启动与聚合"]
+  notice["tender-module-notice"]
+  crawler["tender-module-crawler"]
+  bid["tender-module-bid"]
+  member["tender-module-member"]
+  system["tender-module-system"]
+  infra["tender-module-infra"]
+  discovery["tender-module-discovery<br/>(占位)"]
+  ai["tender-module-ai<br/>(占位)"]
+  tag["tender-module-tag<br/>(占位)"]
+  framework["tender-framework<br/>公共 starters"]
+
+  server --> notice
+  server --> crawler
+  server --> bid
+  server --> member
+  server --> system
+  server --> infra
+  server --> discovery
+  server --> ai
+  server --> tag
+
+  crawler -->|"NoticeApi"| notice
+  bid -->|"NoticeService"| notice
+  notice --> system
+  member --> system
+  ai -.->|"规划"| notice
+  tag -.->|"规划"| notice
+
+  notice --> framework
+  crawler --> framework
+  bid --> framework
+  member --> framework
+  system --> framework
+  infra --> framework

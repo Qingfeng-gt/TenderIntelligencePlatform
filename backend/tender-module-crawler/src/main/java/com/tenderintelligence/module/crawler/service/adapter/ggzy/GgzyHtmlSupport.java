@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * 该站无需 headless 渲染 —— 外壳页虽然是 iframe, 但 b 页是完整直出的 HTML, 普通 HTTP GET 即可。
- * (项目文档此前判定该站「需 headless 渲染」, 本次实测已推翻, 见 doc/技术/06-数据采集设计.md §4.4)
+ * (项目文档此前判定该站「需 headless 渲染」, 本次实测已推翻, 见 doc/06-数据采集设计.md)
  */
 final class GgzyHtmlSupport {
 

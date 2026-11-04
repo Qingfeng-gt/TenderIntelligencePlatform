@@ -7,7 +7,7 @@ import lombok.Data;
  * 标讯附件 Response VO
  *
  * 只有源站直链与元信息, 没有平台侧下载地址 —— 平台不保存文件本体, 附件由用户点链接
- * 到源站下载(边界见 doc/技术/06-数据采集设计.md §十)。
+ * 到源站下载(边界见 doc/06-数据采集设计.md#十一合规要点)。
  */
 @Schema(description = "管理后台 - 标讯附件 Response VO")
 @Data

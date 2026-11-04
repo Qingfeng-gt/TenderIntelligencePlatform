@@ -12,7 +12,7 @@ import lombok.ToString;
  * 标讯附件 DO(一条公告可有多个附件)
  *
  * 只保存**源站附件直链与元信息**, 不保存文件本体 —— 附件由投标人点链接回源站下载,
- * 平台不做文件的二次分发(边界见 doc/技术/06-数据采集设计.md §十)。
+ * 平台不做文件的二次分发(边界见 doc/06-数据采集设计.md#十一合规要点)。
  * 数据由爬虫在解析详情页时写入, 见 NoticeIngestionService。
  */
 @TableName("notice_attachment")

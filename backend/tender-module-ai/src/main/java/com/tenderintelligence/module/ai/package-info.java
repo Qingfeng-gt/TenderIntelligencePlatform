@@ -13,7 +13,7 @@
  *   <li>{@code controller/{app,admin}/}、{@code dal/}、{@code enums/}</li>
  * </ul>
  *
- * <p>两条已定的跨模块口径（doc/毕设 §6）：
+ * <p>两条已定的跨模块口径（doc/05-数据模型与ER图.md）：
  * <ol>
  *   <li><b>向量存储</b>：MySQL 8 没有 VECTOR 类型，向量存 JSON 列、应用层算余弦。
  *       数据量 500~1000 条时全量暴力检索是毫秒级，不要搭 pgvector/ES 向量集群。</li>

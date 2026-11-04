@@ -10,7 +10,7 @@ import com.tenderintelligence.module.notice.api.notice.dto.NoticeUpsertRespDTO;
  * 招投标公告 API 接口
  *
  * <p><b>契约状态：第 1 周末冻结，冻结后只加不改。</b>
- * 变更必须同步乙、丁、戊，并登记到 doc/毕设 §5 接口契约表。
+ * 变更必须同步乙、丁、戊，并登记到 doc/08-接口设计规范.md。
  *
  * <p>实现类：{@link NoticeApiImpl}。
  *

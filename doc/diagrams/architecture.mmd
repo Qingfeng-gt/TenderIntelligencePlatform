@@ -1,0 +1,50 @@
+flowchart TB
+  subgraph Client["接入层"]
+    A1["admin-web<br/>Vue 3 · Vite · Element Plus"]
+    A2["user-web<br/>Vue 3 · Vite · Element Plus"]
+    A3["tender-app<br/>UniApp H5 / App"]
+  end
+
+  subgraph Gateway["接口与安全层"]
+    G1["/admin-api<br/>管理端接口"]
+    G2["/app-api<br/>用户端接口"]
+    G3["Spring Security + OAuth2<br/>Bearer Token / 匿名白名单"]
+    G4["CommonResult · 全局异常 · 参数校验 · Knife4j"]
+  end
+
+  subgraph Business["业务模块"]
+    B1["tender-module-notice<br/>四层标讯 · 项目 · 企业 · 基础数据"]
+    B2["tender-module-crawler<br/>源站适配器 · 调度 · 采集治理"]
+    B3["tender-module-bid<br/>投标台账 · 状态机"]
+    B4["tender-module-member<br/>会员认证"]
+    B5["discovery / ai / tag<br/>规划中占位模块"]
+  end
+
+  subgraph Framework["框架与公共能力"]
+    F1["tender-module-system<br/>RBAC · 字典 · 日志 · OAuth2"]
+    F2["tender-module-infra<br/>配置 · 文件 · 定时任务 · 代码生成"]
+    F3["tender-framework starters<br/>MyBatis-Plus · Redis · Lock4j · Excel · Web"]
+  end
+
+  subgraph Data["数据与外部系统"]
+    D1[("MySQL 8<br/>tender")]
+    D2[("Redis")]
+    D3["公开源站<br/>ccgp · ggzy · ztb_gz"]
+    D4["LLM / Embedding<br/>DeepSeek（预置，未启用检索）"]
+  end
+
+  A1 --> G1
+  A2 --> G1
+  A2 --> G2
+  A3 --> G2
+  G1 --> G3
+  G2 --> G3
+  G3 --> Business
+  G4 --- G3
+  Business --> Framework
+  Business --> D1
+  Framework --> D1
+  Framework --> D2
+  B2 -->|"HTTP 抓取"| D3
+  B2 -->|"NoticeApi.upsert"| B1
+  B5 -.->|"规划"| D4

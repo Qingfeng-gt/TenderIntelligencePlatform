@@ -1,0 +1,10 @@
+flowchart LR
+  START(["创建投标"]) --> SUBMITTED["SUBMITTED<br/>已递交"]
+  SUBMITTED -->|"标记开标"| OTB["OTB<br/>待开标"]
+  SUBMITTED -->|"放弃"| ABANDONED["ABANDONED<br/>放弃"]
+  OTB -->|"确认中标"| WON["WON<br/>中标"]
+  OTB -->|"确认未中标"| LOST["LOST<br/>未中标"]
+  OTB -->|"放弃"| ABANDONED
+  WON --> END1(["终态"])
+  LOST --> END2(["终态"])
+  ABANDONED --> END3(["终态"])

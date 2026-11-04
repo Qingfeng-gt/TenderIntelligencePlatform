@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  *       按"必须有扩展名证据"过滤 —— 平台只列真正可下载的附件</li>
  * </ul>
  *
- * 只解析文件名/直链/类型/大小, <b>不下载文件本体</b>(边界见 doc/技术/06-数据采集设计.md §十)。
+ * 只解析文件名/直链/类型/大小, <b>不下载文件本体</b>(边界见 doc/06-数据采集设计.md#十一合规要点)。
  */
 final class CcgpAttachmentParser {
 

@@ -13,7 +13,7 @@
  *   <li>{@code controller/{app,admin}/}、{@code dal/}、{@code enums/}</li>
  * </ul>
  *
- * <p><b>标签归属口径</b>（doc/毕设 §6 第 8 项）：本模块的 {@code tag} 表是<b>唯一权威标签源</b>。
+ * <p><b>标签归属口径</b>（doc/05-数据模型与ER图.md）：本模块的 {@code tag} 表是<b>唯一权威标签源</b>。
  * {@code notice.industry} 是 crawler 用关键词词典推导出的「规则抽取结果」，仅作为
  * {@code RuleTaggingService} 的输入之一 —— 它由乙产出、且 NoticeRegionExtractor 在乙的私有区，
  * 本模块调不到，只能读 {@code notice.industry} 这个字段。

@@ -1,0 +1,30 @@
+sequenceDiagram
+  autonumber
+  participant U as user-web
+  participant C as NoticePortalController
+  participant S as NoticeService / ProjectService
+  participant M as Mapper
+  participant DB as MySQL
+  participant V as NoticeViewAssembler
+
+  U->>C: GET /notice/page
+  C->>S: getNoticePage(reqVO)
+  S->>M: selectPage(reqVO)
+  M->>DB: 查询 notice（筛选 + 分页）
+  DB-->>M: PageResult<NoticePortalDO>
+  S->>V: buildNoticeList(notices, false)
+  V->>DB: 批量查询 project / tender_project / tender_lot
+  V->>DB: 批量查询 enterprise / base_area / base_code
+  DB-->>V: 关联数据
+  V-->>S: List<NoticeRespVO>
+  S-->>C: PageResult<NoticeRespVO>
+  C-->>U: CommonResult<PageResult>
+
+  U->>C: GET /notice/detail?id=
+  C->>S: getNoticeDetail(id)
+  S->>DB: 查询 notice
+  S->>V: buildNoticeList(notices, true)
+  V->>DB: 查询附件 / 澄清 / 企业关联
+  V-->>S: NoticeRespVO
+  S-->>C: NoticeRespVO
+  C-->>U: CommonResult<NoticeRespVO>

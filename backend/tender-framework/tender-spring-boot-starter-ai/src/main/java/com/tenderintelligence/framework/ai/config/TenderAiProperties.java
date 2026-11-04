@@ -8,7 +8,7 @@ import java.time.Duration;
 /**
  * AI 配置项，前缀 {@code tender.ai}
  *
- * <p>对应 application.yaml 里插槽 6 预置的那一段（见 doc/毕设 §7）。
+ * <p>对应 application.yaml 里插槽 6 预置的那一段（见 doc/03-系统架构.md）。
  */
 @ConfigurationProperties("tender.ai")
 @Data

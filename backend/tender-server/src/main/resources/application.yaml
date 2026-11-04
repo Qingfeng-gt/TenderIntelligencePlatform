@@ -116,7 +116,7 @@ tender:
     schedule-cron: 0 0 */2 * * ? # 采集 cron(6 位、秒在前), 默认每 2 小时; 勿设为空/OFF(会导致启动报错)
     schedule-enabled: true # 定时采集开关, 关闭请用 false
 
-  # ===== 以下三段是毕设插槽 6 预置的，各模块自己往里填，不要改别人的段（doc/毕设 §7）=====
+  # ===== 以下三段是毕设插槽 6 预置的，各模块自己往里填，不要改别人的段（doc/03-系统架构.md）=====
   discovery: {} # M1 站点发现。甲的 DiscoveryProperties(prefix = "tender.discovery") 读这里
   tag: {} # M5 标签体系。戊的 TagProperties(prefix = "tender.tag") 读这里
 
@@ -125,7 +125,7 @@ tender:
     enabled: true
     provider: deepseek # OpenAI 兼容提供方；可选 deepseek / qwen / ollama
     base-url: https://api.deepseek.com/v1 # OpenAI 兼容前缀，要含 /v1；端点路径由客户端拼
-    api-key: ${DEEPSEEK_API_KEY:} # ⚠️ 绝不写死密钥，走环境变量（doc/毕设 §8.6）
+    api-key: ${DEEPSEEK_API_KEY:} # ⚠️ 绝不写死密钥，走环境变量（doc/13-安全与合规.md）
     model: deepseek-chat
     embedding-model: # 留空则 embed(..) 不可用；DeepSeek 无 embedding，需另配（如 bge-m3 本地服务）
     embedding-dimensions: 1024

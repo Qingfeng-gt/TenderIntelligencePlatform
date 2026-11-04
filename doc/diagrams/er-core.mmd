@@ -1,0 +1,209 @@
+erDiagram
+  PROJECT ||--o{ TENDER_PROJECT : "包含"
+  PROJECT ||--o{ TENDER_LOT : "包含"
+  TENDER_PROJECT ||--o{ TENDER_LOT : "包含"
+  PROJECT ||--o{ NOTICE : "聚合"
+  TENDER_PROJECT ||--o{ NOTICE : "发布"
+  TENDER_LOT ||--o{ NOTICE : "关联"
+  NOTICE ||--o{ NOTICE_ATTACHMENT : "附件"
+  NOTICE ||--o{ NOTICE_CHANGE : "澄清/变更"
+  NOTICE ||--o{ NOTICE_ENTERPRISE : "关联企业"
+  ENTERPRISE ||--o{ NOTICE_ENTERPRISE : "参与"
+  ENTERPRISE ||--o{ ENTERPRISE_ROLE : "角色"
+  ENTERPRISE ||--o{ ENTERPRISE_CONTACT : "联系人"
+  ENTERPRISE ||--o{ ENTERPRISE_ALIAS : "别名"
+  ENTERPRISE ||--o{ PROJECT : "招标人/代理"
+  CRAWLER_SITE ||--o{ CRAWLER_CHANNEL : "频道配置"
+  CRAWLER_SITE ||--o{ CRAWLER_TASK : "采集任务"
+  CRAWLER_TASK ||--o{ CRAWLER_FETCH_LOG : "逐 URL 日志"
+  CRAWLER_TASK ||--o{ CRAWL_RAW : "原始快照"
+  NOTICE ||--o{ NOTICE_QUALITY : "数据质量"
+  NOTICE ||--o{ BID_PROJECT : "投标来源"
+  MEMBER_USER ||--o{ BID_PROJECT : "发起投标"
+  BASE_AREA ||--o{ BASE_AREA : "上级区划"
+  BASE_CODE ||--o{ BASE_CODE : "上级编码"
+
+  PROJECT {
+    bigint id PK "项目 ID"
+    string project_key UK "归并键"
+    string project_name "项目名称"
+    string province_code "省级代码"
+    string city_code "市级代码"
+    decimal budget "预算（万元）"
+    int notice_count "公告数"
+    string data_quality_status "质量状态"
+  }
+
+  TENDER_PROJECT {
+    bigint id PK "招标项目 ID"
+    bigint project_id FK "项目 ID"
+    string tender_project_no "招标项目编号"
+    string procurement_method_code "采购方式"
+    decimal budget "预算（万元）"
+    int lot_count "标段数"
+    string status "状态"
+  }
+
+  TENDER_LOT {
+    bigint id PK "标段 ID"
+    bigint tender_project_id FK "招标项目 ID"
+    bigint project_id FK "项目 ID"
+    string lot_no UK "标段编号"
+    string lot_name "标段名称"
+    decimal price_ceiling "最高限价"
+    decimal deposit_amount "保证金"
+  }
+
+  NOTICE {
+    bigint id PK "公告 ID"
+    bigint project_id FK "项目 ID"
+    bigint tender_project_id FK "招标项目 ID"
+    bigint lot_id FK "标段 ID"
+    string title "标题"
+    string notice_type_code "公告类型"
+    string source_url UK "源站 URL"
+    string source_platform "来源平台"
+    datetime publish_time "发布时间"
+    datetime bid_deadline "投标截止"
+    decimal budget "预算（万元）"
+    string industry "行业"
+    string data_quality_status "质量状态"
+  }
+
+  NOTICE_ATTACHMENT {
+    bigint id PK "附件 ID"
+    bigint notice_id FK "公告 ID"
+    string file_name "文件名"
+    string file_url "源站直链"
+    string file_type "类型"
+  }
+
+  NOTICE_CHANGE {
+    bigint id PK "变更 ID"
+    bigint notice_id FK "公告 ID"
+    string change_type_code "变更类型"
+    string change_title "变更标题"
+    datetime change_time "变更时间"
+  }
+
+  NOTICE_ENTERPRISE {
+    bigint id PK "关联 ID"
+    bigint notice_id FK "公告 ID"
+    bigint enterprise_id FK "企业 ID"
+    string role_code "角色"
+    string source_text "原文"
+    decimal confidence "置信度"
+  }
+
+  ENTERPRISE {
+    bigint id PK "企业 ID"
+    string name "企业名称"
+    string normalized_name "归一名称"
+    string name_hash "名称哈希"
+    string unified_social_credit_code UK "统一社会信用代码"
+    string status "状态"
+  }
+
+  ENTERPRISE_ROLE {
+    bigint id PK "角色 ID"
+    bigint enterprise_id FK "企业 ID"
+    string role_code "角色代码"
+  }
+
+  ENTERPRISE_CONTACT {
+    bigint id PK "联系人 ID"
+    bigint enterprise_id FK "企业 ID"
+    string name "姓名"
+    string phone "电话"
+  }
+
+  ENTERPRISE_ALIAS {
+    bigint id PK "别名 ID"
+    bigint enterprise_id FK "企业 ID"
+    string alias_name "别名"
+  }
+
+  BASE_AREA {
+    bigint id PK "主键"
+    string code UK "行政区划代码"
+    string parent_code "上级代码"
+    int level "层级"
+    string name "名称"
+    string short_name "简称"
+  }
+
+  BASE_CODE {
+    bigint id PK "主键"
+    string code_set "编码集"
+    string code "编码"
+    string name "名称"
+  }
+
+  CRAWLER_SITE {
+    bigint id PK "站点 ID"
+    string code UK "站点代码"
+    string name "站点名称"
+    boolean enabled "是否启用"
+    string health_status "健康状态"
+  }
+
+  CRAWLER_CHANNEL {
+    bigint id PK "频道 ID"
+    string site_code FK "站点代码"
+    string path "频道路径/类别码"
+    string notice_type_code "公告类型"
+    int page_count "翻页数"
+    boolean enabled "是否启用"
+  }
+
+  CRAWLER_TASK {
+    bigint id PK "任务 ID"
+    string site_code FK "站点代码"
+    datetime start_time "开始时间"
+    string status "RUNNING/SUCCESS/FAILED"
+    int new_insert "新增数"
+    int updated "更新数"
+  }
+
+  CRAWLER_FETCH_LOG {
+    bigint id PK "日志 ID"
+    bigint task_id FK "任务 ID"
+    string url "请求 URL"
+    int http_status "HTTP 状态"
+    string status "结果"
+  }
+
+  CRAWL_RAW {
+    bigint id PK "快照 ID"
+    bigint task_id FK "任务 ID"
+    string source_url "源站 URL"
+    string content_hash "内容哈希"
+    string parse_status "解析状态"
+  }
+
+  NOTICE_QUALITY {
+    bigint id PK "质量 ID"
+    bigint notice_id FK "公告 ID"
+    string issue_type "问题类型"
+    string field_name "字段"
+    string severity "严重度"
+    string status "OPEN/CLOSED"
+  }
+
+  BID_PROJECT {
+    bigint id PK "投标 ID"
+    bigint user_id FK "会员 ID"
+    bigint notice_id FK "公告 ID"
+    string project_name "项目名称"
+    datetime deadline "投标截止"
+    decimal bid_amount "投标金额"
+    string status "状态机"
+  }
+
+  MEMBER_USER {
+    bigint id PK "会员 ID"
+    string username UK "用户名"
+    string password "密码哈希"
+    string nickname "昵称"
+    string status "状态"
+  }
